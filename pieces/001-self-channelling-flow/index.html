@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>001 — self-channelling flow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* substrate 001 — flow that digs its own riverbed.
+     Tero et al. physarum network model: pressure drives flow along edges,
+     flow feeds back into conductance. γ is the only aesthetic knob. */
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #hud {
+    position: fixed; left: 16px; bottom: 14px; right: 16px;
+    display: flex; align-items: baseline; gap: 14px;
+    font: 300 11px/1.4 "IBM Plex Mono", ui-monospace, monospace;
+    color: #9aa3ad; user-select: none; -webkit-user-select: none;
+  }
+  #hud .k { color: #545b63; }
+  #gamma-val { color: #cdd6df; min-width: 4.5ch; display: inline-block; }
+  #regime { color: #6d7680; min-width: 14ch; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1; max-width: 420px; height: 1px; background: #2a2f34; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 9px; height: 9px; border-radius: 0; background: #cdd6df; cursor: ew-resize;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 9px; height: 9px; border-radius: 0; border: none; background: #cdd6df; cursor: ew-resize;
+  }
+  #title {
+    position: fixed; left: 16px; top: 14px;
+    font: 300 11px/1.5 "IBM Plex Mono", ui-monospace, monospace;
+    color: #545b63; user-select: none;
+  }
+  #title b { color: #9aa3ad; font-weight: 400; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title"><b>001 — self-channelling flow</b><br>flow carves conductance; conductance carries flow. drag γ.</div>
+<div id="hud">
+  <span class="k">γ</span><span id="gamma-val">1.00</span>
+  <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
+  <span id="regime"></span>
+  <span class="k" id="fps"></span>
+</div>
+<script>
+"use strict";
+
+/* ---------------------------------------------------------------- graph --
+   Jittered triangular lattice. Nodes carry pressure; edges carry
+   conductance D and length L. One source (left), one sink (right).
+   The network IS the first-class object — no underlying field.        */
+
+const COLS = 24, ROWS = 17;
+const JITTER = 0.36;          // breaks lattice regularity so channels look grown, not drawn
+const I0 = 1.0;               // injected current
+const DT = 0.55;              // adaptation step (per sim tick)
+const D_INIT = 0.35, D_MIN = 1e-4;
+const SWEEPS = 26;            // Gauss-Seidel sweeps per frame (warm-started)
+
+function buildGraph(seed) {
+  // deterministic RNG so the piece is reproducible (mulberry32)
+  let s = seed >>> 0;
+  const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+  const nodes = [], index = [];
+  for (let r = 0; r < ROWS; r++) {
+    index.push([]);
+    for (let c = 0; c < COLS; c++) {
+      const x = c + (r % 2 ? 0.5 : 0) + (rnd() - 0.5) * JITTER;
+      const y = r * 0.866 + (rnd() - 0.5) * JITTER;
+      index[r].push(nodes.length);
+      nodes.push({ x, y, p: 0, inj: 0 });
+    }
+  }
+  const edges = [];
+  const addEdge = (a, b) => {
+    const dx = nodes[a].x - nodes[b].x, dy = nodes[a].y - nodes[b].y;
+    edges.push({ a, b, L: Math.hypot(dx, dy), D: D_INIT * (0.7 + 0.6 * rnd()), Q: 0 });
+  };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const i = index[r][c];
+    if (c + 1 < COLS) addEdge(i, index[r][c + 1]);
+    if (r + 1 < ROWS) {
+      addEdge(i, index[r + 1][c]);
+      const d = r % 2 ? c + 1 : c - 1;                 // the second diagonal of the triangulation
+      if (d >= 0 && d < COLS) addEdge(i, index[r + 1][d]);
+    }
+  }
+  // adjacency for the solver
+  const adj = nodes.map(() => []);
+  edges.forEach((e, k) => { adj[e.a].push(k); adj[e.b].push(k); });
+
+  const source = index[(ROWS / 2) | 0][0];
+  const sink   = index[(ROWS / 2) | 0][COLS - 1];
+  nodes[source].inj = +I0;
+  nodes[sink].inj   = -I0;
+
+  return { nodes, edges, adj, source, sink };
+}
+
+const G = buildGraph(20260722);
+
+/* --------------------------------------------------------------- solver --
+   Kirchhoff: for each node, sum of (D/L)(p_i - p_j) = injection.
+   Gauss-Seidel with warm start — conductances drift slowly, so last
+   frame's pressures are an excellent initial guess. Sink pinned to 0.  */
+
+function solvePressure() {
+  const { nodes, edges, adj, sink } = G;
+  for (let sweep = 0; sweep < SWEEPS; sweep++) {
+    for (let i = 0; i < nodes.length; i++) {
+      if (i === sink) { nodes[i].p = 0; continue; }
+      let wsum = 0, acc = nodes[i].inj;
+      const ne = adj[i];
+      for (let k = 0; k < ne.length; k++) {
+        const e = edges[ne[k]];
+        const j = e.a === i ? e.b : e.a;
+        const w = e.D / e.L;
+        wsum += w; acc += w * nodes[j].p;
+      }
+      if (wsum > 0) nodes[i].p = acc / wsum;
+    }
+  }
+}
+
+/* Tero adaptation with saturating response: dD/dt = Q^γ/(1+Q^γ) − D.
+   γ < 1 keeps losers alive → redundant mesh.
+   γ > 1 winner-takes-all      → single tree.                          */
+function adapt(gamma) {
+  const { nodes, edges } = G;
+  for (const e of edges) {
+    e.Q = (e.D / e.L) * (nodes[e.a].p - nodes[e.b].p);
+    const q = Math.abs(e.Q) * 2.2;                    // gain: puts typical Q near the knee of f
+    const fq = Math.pow(q, gamma);
+    const target = fq / (1 + fq);
+    e.D += DT * (target - e.D);
+    if (e.D < D_MIN) e.D = D_MIN;
+  }
+}
+
+/* ---------------------------------------------------------------- webgl --
+   One WebGL2 context, preserveDrawingBuffer. Each frame:
+   (1) a translucent black quad fades what's there — the riverbed's memory,
+       so dragging γ leaves the reorganisation visible as a decaying trace;
+   (2) edges drawn additively as glow quads, width & heat from conductance. */
+
+const canvas = document.getElementById("c");
+const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true, antialias: false, alpha: false });
+
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+const edgeProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;      // clip space
+  layout(location=1) in float a_v;       // -1..1 across the width
+  layout(location=2) in float a_heat;    // conductance-derived intensity 0..1
+  out float v; out float heat;
+  void main(){ v = a_v; heat = a_heat; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float;
+  in float v; in float heat; out vec4 o;
+  void main(){
+    float core = exp(-v*v*5.0);                    // bright filament
+    float halo = exp(-v*v*1.2) * 0.35;             // soft channel glow
+    float a = (core + halo) * heat;
+    // cold water -> hot filament ramp
+    vec3 cold = vec3(0.10, 0.28, 0.45);
+    vec3 hot  = vec3(0.55, 0.95, 1.05);
+    vec3 white= vec3(1.05, 1.02, 0.95);
+    vec3 col = mix(cold, hot, smoothstep(0.0, 0.55, heat));
+    col = mix(col, white, smoothstep(0.55, 1.0, heat) * core);
+    o = vec4(col * a, 1.0);
+  }`);
+
+const fadeProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  void main(){ gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float; uniform float u_fade; out vec4 o;
+  void main(){ o = vec4(0., 0., 0., u_fade); }`);
+const u_fade = gl.getUniformLocation(fadeProg, "u_fade");
+
+// endpoints glow: source warm, sink cold — the only two fixed facts in the piece
+const dotProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in vec2 a_center;
+  layout(location=2) in vec3 a_col;
+  out vec2 rel; out vec3 col;
+  void main(){ rel = a_pos - a_center; col = a_col; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float; in vec2 rel; in vec3 col; out vec4 o;
+  uniform vec2 u_scale;
+  void main(){
+    float r = length(rel / u_scale);
+    float a = exp(-r*r*3.0);
+    o = vec4(col * a, 1.0);
+  }`);
+const u_dotScale = gl.getUniformLocation(dotProg, "u_scale");
+
+const quadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,-1, 1,1, -1,1]), gl.STATIC_DRAW);
+
+const edgeBuf = gl.createBuffer();
+const dotBuf = gl.createBuffer();
+gl.enable(gl.BLEND);
+
+/* world -> clip mapping with margins, preserving aspect */
+let mapX, mapY, pxScale;
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  const xs = G.nodes.map(n => n.x), ys = G.nodes.map(n => n.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const m = 0.86; // usable fraction of the viewport
+  const sx = 2 * m / (x1 - x0), sy = 2 * m / (y1 - y0);
+  const s = Math.min(sx * canvas.width, sy * canvas.height); // uniform world scale in pixels*clip
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  mapX = x => (x - cx) * s / canvas.width;
+  mapY = y => -(y - cy) * s / canvas.height;
+  pxScale = { x: s / canvas.width, y: s / canvas.height };
+}
+addEventListener("resize", fit); fit();
+
+/* build edge quads each frame — ~1.1k edges * 6 verts, trivial */
+/* Width comes from conductance (how wide the riverbed was carved);
+   heat comes from flow (how much water runs through it right now).
+   The two disagree exactly when the piece is interesting: wide-but-cooling
+   channels are the memory of a decision being revised.                  */
+/* Absolute scales, no per-frame renormalisation: the saturating f() already
+   bounds D in [0,1], and |Q| is bounded by the injected current I0=1.
+   (First cut normalised by p95 — in the tree regime 95% of edges sit at the
+   floor, the reference collapses to noise and everything renders saturated.
+   Renormalising against a mostly-dead population inverts the picture.)     */
+function drawEdges() {
+  const E = G.edges, N = G.nodes;
+  const data = new Float32Array(E.length * 6 * 4);
+  let ptr = 0;
+  for (const e of E) {
+    const Dn = Math.min(e.D / 0.55, 1.6);
+    const Qn = Math.min(Math.abs(e.Q) / 0.38, 1.6);
+    const width = Math.pow(Dn, 0.55);                  // carved bed
+    const heat = Math.min(Math.pow(Qn, 0.9) * (0.25 + 0.75 * Math.min(Dn, 1)), 1.25); // water in it
+    if (heat < 0.012 && width < 0.05) continue;        // dead capillaries: skip, the fade buries them
+    const ax = mapX(N[e.a].x), ay = mapY(N[e.a].y);
+    const bx = mapX(N[e.b].x), by = mapY(N[e.b].y);
+    let nx = -(by - ay), ny = bx - ax;
+    const nl = Math.hypot(nx, ny) || 1;
+    const w = (0.0012 + 0.0085 * width);               // clip-space half-width
+    nx = nx / nl * w * pxScale.y / pxScale.x; ny = ny / nl * w; // roughly circular glow cross-section
+    // two triangles: (A-,B-,A+) (B-,B+,A+)
+    const put = (x, y, v) => { data[ptr++] = x; data[ptr++] = y; data[ptr++] = v; data[ptr++] = heat; };
+    put(ax - nx, ay - ny, -1); put(bx - nx, by - ny, -1); put(ax + nx, ay + ny, 1);
+    put(bx - nx, by - ny, -1); put(bx + nx, by + ny, 1); put(ax + nx, ay + ny, 1);
+  }
+  gl.useProgram(edgeProg);
+  gl.blendFunc(gl.ONE, gl.ONE);                        // additive: channels sum like light
+  gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, ptr), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 16, 12);
+  gl.drawArrays(gl.TRIANGLES, 0, ptr / 4);
+}
+
+function drawEndpoints() {
+  const r = 0.05; // world-ish radius in clip units
+  const mk = (node, col) => {
+    const cx = mapX(node.x), cy = mapY(node.y);
+    const v = [];
+    const corners = [[-1,-1],[1,-1],[-1,1],[1,-1],[1,1],[-1,1]];
+    for (const [ux, uy] of corners)
+      v.push(cx + ux * r * pxScale.x / pxScale.x * 0.06, cy + uy * 0.06, cx, cy, col[0], col[1], col[2]);
+    return v;
+  };
+  const data = new Float32Array([
+    ...mk(G.nodes[G.source], [0.9, 0.45, 0.15]),   // source: ember
+    ...mk(G.nodes[G.sink],   [0.15, 0.5, 0.9]),    // sink: deep blue
+  ]);
+  gl.useProgram(dotProg);
+  gl.uniform2f(u_dotScale, 0.06, 0.06);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, dotBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 28, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 28, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 28, 16);
+  gl.drawArrays(gl.TRIANGLES, 0, 12);
+}
+
+function fade(alpha) {
+  gl.useProgram(fadeProg);
+  gl.uniform1f(u_fade, alpha);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+/* ------------------------------------------------------------------ ui -- */
+const slider = document.getElementById("gamma");
+const gammaVal = document.getElementById("gamma-val");
+const regimeEl = document.getElementById("regime");
+const fpsEl = document.getElementById("fps");
+let gamma = parseFloat(slider.value);
+let stir = 0;   // extra trail persistence right after the knob moves
+slider.addEventListener("input", () => {
+  gamma = parseFloat(slider.value);
+  stir = 1.0;
+  gammaVal.textContent = gamma.toFixed(2);
+});
+function regimeLabel(g) {
+  if (g < 0.85) return "mesh · redundant";
+  if (g <= 1.15) return "critical · hesitating";
+  return "tree · winner-takes-all";
+}
+
+/* ---------------------------------------------------------------- loop -- */
+let last = performance.now(), fpsAcc = 0, fpsN = 0;
+function frame(now) {
+  const dt = now - last; last = now;
+  fpsAcc += dt; if (++fpsN === 30) { fpsEl.textContent = (30000 / fpsAcc).toFixed(0) + " fps"; fpsAcc = 0; fpsN = 0; }
+
+  solvePressure();
+  adapt(gamma);
+
+  // trail: when γ is being dragged the reorganisation should linger —
+  // the riverbed remembers where the water used to run.
+  stir = Math.max(0, stir - 0.004 * dt);
+  const fadeAlpha = 0.055 + 0.06 * (1 - stir) ** 2;   // stirring → slower fade → longer memory
+  fade(Math.min(fadeAlpha, 0.12));
+  drawEdges();
+  drawEndpoints();
+
+  regimeEl.textContent = regimeLabel(gamma);
+  requestAnimationFrame(frame);
+}
+gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+gammaVal.textContent = gamma.toFixed(2);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
