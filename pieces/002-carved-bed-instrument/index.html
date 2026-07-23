@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>002 — carved bed as instrument</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* substrate 002 — the bed 001 carved, played back.
+     Same graph, same seed, same Tero adaptation — but now the slow structure
+     is the recording and fast pulses are the playback. Two timescales in one
+     frame: carving continues underneath (slow), conduction rides on top (fast).
+     γ is no longer a shape knob; it is timbre — tree plays a solo line,
+     mesh plays chords. */
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+  #hud {
+    position: fixed; left: 16px; bottom: 14px; right: 16px;
+    display: flex; align-items: baseline; gap: 14px;
+    font: 300 11px/1.4 "IBM Plex Mono", ui-monospace, monospace;
+    color: #9aa3ad; user-select: none; -webkit-user-select: none;
+  }
+  #hud .k { color: #545b63; }
+  #gamma-val { color: #cdd6df; min-width: 4.5ch; display: inline-block; }
+  #regime { color: #6d7680; min-width: 16ch; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1; max-width: 420px; height: 1px; background: #2a2f34; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 9px; height: 9px; border-radius: 0; background: #cdd6df; cursor: ew-resize;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 9px; height: 9px; border-radius: 0; border: none; background: #cdd6df; cursor: ew-resize;
+  }
+  #title {
+    position: fixed; left: 16px; top: 14px;
+    font: 300 11px/1.5 "IBM Plex Mono", ui-monospace, monospace;
+    color: #545b63; user-select: none;
+  }
+  #title b { color: #9aa3ad; font-weight: 400; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title"><b>002 — carved bed as instrument</b><br>structure is the recording; pulses are the playback. click to strike a note.</div>
+<div id="hud">
+  <span class="k">γ</span><span id="gamma-val">1.00</span>
+  <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
+  <span id="regime"></span>
+  <span class="k" id="fps"></span>
+</div>
+<script>
+"use strict";
+
+/* ---------------------------------------------------------------- graph --
+   Identical lattice, identical seed as 001 — this is literally the same
+   bed. 001 carved it; 002 plays it.                                     */
+
+const COLS = 24, ROWS = 17;
+const JITTER = 0.36;
+const I0 = 1.0;
+const D_INIT = 0.35, D_MIN = 1e-4;
+const SWEEPS = 14;            // carving is background now — fewer sweeps, still warm-started
+const DT_CARVE = 0.10;        // slow: the bed keeps living, but at geological tempo
+
+function buildGraph(seed) {
+  let s = seed >>> 0;
+  const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+  const nodes = [], index = [];
+  for (let r = 0; r < ROWS; r++) {
+    index.push([]);
+    for (let c = 0; c < COLS; c++) {
+      const x = c + (r % 2 ? 0.5 : 0) + (rnd() - 0.5) * JITTER;
+      const y = r * 0.866 + (rnd() - 0.5) * JITTER;
+      index[r].push(nodes.length);
+      nodes.push({ x, y, p: 0, inj: 0, ref: 0, flash: 0 });
+    }
+  }
+  const edges = [];
+  const addEdge = (a, b) => {
+    const dx = nodes[a].x - nodes[b].x, dy = nodes[a].y - nodes[b].y;
+    edges.push({ a, b, L: Math.hypot(dx, dy), D: D_INIT * (0.7 + 0.6 * rnd()), Q: 0 });
+  };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const i = index[r][c];
+    if (c + 1 < COLS) addEdge(i, index[r][c + 1]);
+    if (r + 1 < ROWS) {
+      addEdge(i, index[r + 1][c]);
+      const d = r % 2 ? c + 1 : c - 1;
+      if (d >= 0 && d < COLS) addEdge(i, index[r + 1][d]);
+    }
+  }
+  const adj = nodes.map(() => []);
+  edges.forEach((e, k) => { adj[e.a].push(k); adj[e.b].push(k); });
+
+  const source = index[(ROWS / 2) | 0][0];
+  const sink   = index[(ROWS / 2) | 0][COLS - 1];
+  nodes[source].inj = +I0;
+  nodes[sink].inj   = -I0;
+
+  return { nodes, edges, adj, source, sink };
+}
+
+const G = buildGraph(20260722);   // ← 001's seed. Same bed.
+
+/* --------------------------------------------------------------- carving --
+   001's solver + adaptation, unchanged except tempo. Runs underneath the
+   pulses forever — the instrument is still being carved while it is played.
+   Startup fast-forwards ~400 ticks so the piece opens on a formed bed.    */
+
+function solvePressure(sweeps) {
+  const { nodes, edges, adj, sink } = G;
+  for (let sweep = 0; sweep < sweeps; sweep++) {
+    for (let i = 0; i < nodes.length; i++) {
+      if (i === sink) { nodes[i].p = 0; continue; }
+      let wsum = 0, acc = nodes[i].inj;
+      const ne = adj[i];
+      for (let k = 0; k < ne.length; k++) {
+        const e = edges[ne[k]];
+        const j = e.a === i ? e.b : e.a;
+        const w = e.D / e.L;
+        wsum += w; acc += w * nodes[j].p;
+      }
+      if (wsum > 0) nodes[i].p = acc / wsum;
+    }
+  }
+}
+
+function adapt(gamma, dt) {
+  const { nodes, edges } = G;
+  for (const e of edges) {
+    e.Q = (e.D / e.L) * (nodes[e.a].p - nodes[e.b].p);
+    const q = Math.abs(e.Q) * 2.2;
+    const fq = Math.pow(q, gamma);
+    const target = fq / (1 + fq);
+    e.D += dt * (target - e.D);
+    if (e.D < D_MIN) e.D = D_MIN;
+  }
+}
+
+/* ---------------------------------------------------------------- pulses --
+   The new organ. A pulse lives on an edge with a position t ∈ [0,1] and a
+   direction. It travels at a speed set by conductance (wide bed = fast
+   conduction). Arriving at a node: if the node is not refractory, it fires —
+   flashes, and re-emits pulses into the strongest other edges. Refractory
+   period turns what would be an explosion into a travelling wave.
+
+   The γ-timbre claim, mechanically: in the tree regime only one edge per
+   node clears the threshold, so a strike propagates as a single moving
+   point — a solo line. In the mesh regime several edges clear it, the
+   pulse splits, and the wavefront IS a chord.                            */
+
+const PULSE_SPEED = 2.6;      // world units / s along an edge, × conductance factor
+const D_LIVE = 0.045;         // an edge deader than this does not conduct
+const REFRACTORY = 0.38;      // s — wave discipline
+const BRANCH_MAX = 3;         // at most this many onward branches per firing
+const E_DECAY = 0.80;         // energy kept per hop (per branch, scaled by share)
+const E_CUTOFF = 0.05;        // below this a pulse dies quietly
+const MAX_PULSES = 900;       // hard safety
+
+const pulses = [];            // {edge, dir(+1 a→b / -1 b→a), t, e(nergy)}
+
+function fireNode(i, energy, fromEdge, now) {
+  const n = G.nodes[i];
+  if (now < n.ref) return;
+  n.ref = now + REFRACTORY;
+  n.flash = Math.min(1, energy + 0.25);
+  // candidate onward edges: alive, not the one we came in on
+  const cand = [];
+  for (const k of G.adj[i]) {
+    if (k === fromEdge) continue;
+    const e = G.edges[k];
+    if (e.D > D_LIVE) cand.push(k);
+  }
+  if (!cand.length) return;
+  cand.sort((a, b) => G.edges[b].D - G.edges[a].D);
+  const take = cand.slice(0, BRANCH_MAX);
+  const Dmax = G.edges[take[0]].D;
+  for (const k of take) {
+    const e = G.edges[k];
+    const share = Math.pow(e.D / Dmax, 0.6);          // strongest branch keeps most energy
+    const child = energy * E_DECAY * share;
+    if (child < E_CUTOFF || pulses.length >= MAX_PULSES) continue;
+    pulses.push({ edge: k, dir: e.a === i ? +1 : -1, t: 0, e: child });
+  }
+}
+
+function stepPulses(dt, now) {
+  for (let i = pulses.length - 1; i >= 0; i--) {
+    const p = pulses[i];
+    const e = G.edges[p.edge];
+    if (e.D < D_LIVE * 0.6) { pulses.splice(i, 1); continue; }   // bed eroded under the pulse
+    const v = PULSE_SPEED * (0.25 + 1.5 * Math.min(e.D, 1));     // wide bed conducts fast
+    p.t += v * dt / e.L;
+    if (p.t >= 1) {
+      const arrive = p.dir > 0 ? e.b : e.a;
+      pulses.splice(i, 1);
+      fireNode(arrive, p.e, p.edge, now);
+      if (arrive === G.sink) G.nodes[G.sink].flash = 1.4;        // the note lands
+    }
+  }
+  // flash + refractory decay
+  for (const n of G.nodes) n.flash = Math.max(0, n.flash - 2.2 * dt);
+}
+
+/* strikes: a metronome at the source, and the pointer anywhere.           */
+let metro = 0;
+const METRO_PERIOD = 2.4;     // s
+function metronome(dt, now) {
+  metro += dt;
+  if (metro >= METRO_PERIOD) {
+    metro = 0;
+    G.nodes[G.source].ref = 0;              // the metronome always plays
+    fireNode(G.source, 1.0, -1, now);
+  }
+}
+
+/* ---------------------------------------------------------------- webgl -- */
+const canvas = document.getElementById("c");
+const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true, antialias: false, alpha: false });
+
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+/* bed: 001's edge program, re-graded cold — structure is memory here.
+   heat input now encodes conductance only (no flow-brightness): the bed
+   glows faintly by how deeply it was carved.                             */
+const edgeProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in float a_v;
+  layout(location=2) in float a_heat;
+  out float v; out float heat;
+  void main(){ v = a_v; heat = a_heat; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float;
+  in float v; in float heat; out vec4 o;
+  void main(){
+    float core = exp(-v*v*5.0);
+    float halo = exp(-v*v*1.2) * 0.35;
+    float a = (core + halo) * heat;
+    // cold memory ramp: graphite -> steel blue. No white — the bed never shouts.
+    vec3 deep = vec3(0.05, 0.09, 0.13);
+    vec3 steel= vec3(0.16, 0.30, 0.42);
+    vec3 col = mix(deep, steel, smoothstep(0.0, 1.0, heat));
+    o = vec4(col * a, 1.0);
+  }`);
+
+/* pulses: hot moving segments — the only warm thing in the piece.         */
+const pulseProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in float a_v;
+  layout(location=2) in float a_e;
+  out float v; out float en;
+  void main(){ v = a_v; en = a_e; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float;
+  in float v; in float en; out vec4 o;
+  void main(){
+    float core = exp(-v*v*6.0);
+    float a = core * en;
+    vec3 ember = vec3(1.0, 0.52, 0.18);
+    vec3 white = vec3(1.05, 0.98, 0.88);
+    vec3 col = mix(ember, white, en * core * 0.8);
+    o = vec4(col * a, 1.0);
+  }`);
+
+const fadeProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  void main(){ gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float; uniform float u_fade; out vec4 o;
+  void main(){ o = vec4(0., 0., 0., u_fade); }`);
+const u_fade = gl.getUniformLocation(fadeProg, "u_fade");
+
+/* node flashes + endpoints, one dot pass                                  */
+const dotProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in vec2 a_center;
+  layout(location=2) in vec3 a_col;
+  out vec2 rel; out vec3 col;
+  void main(){ rel = a_pos - a_center; col = a_col; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float; in vec2 rel; in vec3 col; out vec4 o;
+  uniform vec2 u_scale;
+  void main(){
+    float r = length(rel / u_scale);
+    float a = exp(-r*r*3.0);
+    o = vec4(col * a, 1.0);
+  }`);
+const u_dotScale = gl.getUniformLocation(dotProg, "u_scale");
+
+const quadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,-1, 1,1, -1,1]), gl.STATIC_DRAW);
+
+const edgeBuf = gl.createBuffer();
+const pulseBuf = gl.createBuffer();
+const dotBuf = gl.createBuffer();
+gl.enable(gl.BLEND);
+
+let mapX, mapY, pxScale, invMap;
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  const xs = G.nodes.map(n => n.x), ys = G.nodes.map(n => n.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const m = 0.86;
+  const sx = 2 * m / (x1 - x0), sy = 2 * m / (y1 - y0);
+  const s = Math.min(sx * canvas.width, sy * canvas.height);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  mapX = x => (x - cx) * s / canvas.width;
+  mapY = y => -(y - cy) * s / canvas.height;
+  invMap = (px, py) => {         // pointer px (CSS) -> world
+    const clx = (px * dpr / canvas.width) * 2 - 1;
+    const cly = 1 - (py * dpr / canvas.height) * 2;
+    return { x: clx * canvas.width / s + cx, y: -cly * canvas.height / s + cy };
+  };
+  pxScale = { x: s / canvas.width, y: s / canvas.height };
+}
+addEventListener("resize", fit); fit();
+
+function drawBed() {
+  const E = G.edges, N = G.nodes;
+  const data = new Float32Array(E.length * 6 * 4);
+  let ptr = 0;
+  for (const e of E) {
+    const Dn = Math.min(e.D / 0.55, 1.4);
+    const width = Math.pow(Dn, 0.55);
+    const heat = Math.min(Dn, 1.0);                    // carved depth only — no flow term
+    if (width < 0.05) continue;
+    const ax = mapX(N[e.a].x), ay = mapY(N[e.a].y);
+    const bx = mapX(N[e.b].x), by = mapY(N[e.b].y);
+    let nx = -(by - ay), ny = bx - ax;
+    const nl = Math.hypot(nx, ny) || 1;
+    const w = (0.0012 + 0.0085 * width);
+    nx = nx / nl * w * pxScale.y / pxScale.x; ny = ny / nl * w;
+    const put = (x, y, v) => { data[ptr++] = x; data[ptr++] = y; data[ptr++] = v; data[ptr++] = heat; };
+    put(ax - nx, ay - ny, -1); put(bx - nx, by - ny, -1); put(ax + nx, ay + ny, 1);
+    put(bx - nx, by - ny, -1); put(bx + nx, by + ny, 1); put(ax + nx, ay + ny, 1);
+  }
+  gl.useProgram(edgeProg);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, ptr), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 16, 12);
+  gl.drawArrays(gl.TRIANGLES, 0, ptr / 4);
+}
+
+/* each pulse: a short segment (tail behind the head) along its edge        */
+function drawPulses() {
+  if (!pulses.length) return;
+  const N = G.nodes;
+  const data = new Float32Array(pulses.length * 6 * 4);
+  let ptr = 0;
+  for (const p of pulses) {
+    const e = G.edges[p.edge];
+    const A = p.dir > 0 ? N[e.a] : N[e.b];
+    const B = p.dir > 0 ? N[e.b] : N[e.a];
+    const hx = A.x + (B.x - A.x) * p.t,      hy = A.y + (B.y - A.y) * p.t;
+    const t0 = Math.max(0, p.t - 0.30);
+    const tx = A.x + (B.x - A.x) * t0,       ty = A.y + (B.y - A.y) * t0;
+    const ax = mapX(tx), ay = mapY(ty), bx = mapX(hx), by = mapY(hy);
+    let nx = -(by - ay), ny = bx - ax;
+    const nl = Math.hypot(nx, ny) || 1;
+    const w = 0.006 * (0.5 + 0.5 * p.e);
+    nx = nx / nl * w * pxScale.y / pxScale.x; ny = ny / nl * w;
+    const put = (x, y, v) => { data[ptr++] = x; data[ptr++] = y; data[ptr++] = v; data[ptr++] = p.e; };
+    put(ax - nx, ay - ny, -1); put(bx - nx, by - ny, -1); put(ax + nx, ay + ny, 1);
+    put(bx - nx, by - ny, -1); put(bx + nx, by + ny, 1); put(ax + nx, ay + ny, 1);
+  }
+  gl.useProgram(pulseProg);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, pulseBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, ptr), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 16, 12);
+  gl.drawArrays(gl.TRIANGLES, 0, ptr / 4);
+}
+
+/* node flashes (firing) + the two endpoints                                */
+function drawDots() {
+  const verts = [];
+  const corners = [[-1,-1],[1,-1],[-1,1],[1,-1],[1,1],[-1,1]];
+  const R = 0.05;
+  const mk = (node, col, scale) => {
+    const cx = mapX(node.x), cy = mapY(node.y);
+    for (const [ux, uy] of corners)
+      verts.push(cx + ux * R * scale, cy + uy * R * scale, cx, cy, col[0], col[1], col[2]);
+  };
+  for (const n of G.nodes) {
+    if (n.flash > 0.02) mk(n, [1.0 * n.flash, 0.55 * n.flash, 0.2 * n.flash], 0.9 + 0.6 * n.flash);
+  }
+  mk(G.nodes[G.source], [0.5, 0.26, 0.10], 1.2);   // source: dim ember (metronome home)
+  mk(G.nodes[G.sink],   [0.10, 0.30, 0.55], 1.2);  // sink: deep blue (where notes land)
+  if (!verts.length) return;
+  const data = new Float32Array(verts);
+  gl.useProgram(dotProg);
+  gl.uniform2f(u_dotScale, 0.045, 0.045);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, dotBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 28, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 28, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 28, 16);
+  gl.drawArrays(gl.TRIANGLES, 0, data.length / 7);
+}
+
+function fade(alpha) {
+  gl.useProgram(fadeProg);
+  gl.uniform1f(u_fade, alpha);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+/* ------------------------------------------------------------------ ui -- */
+const slider = document.getElementById("gamma");
+const gammaVal = document.getElementById("gamma-val");
+const regimeEl = document.getElementById("regime");
+const fpsEl = document.getElementById("fps");
+let gamma = parseFloat(slider.value);
+slider.addEventListener("input", () => {
+  gamma = parseFloat(slider.value);
+  gammaVal.textContent = gamma.toFixed(2);
+});
+function timbreLabel(g) {
+  if (g < 0.85) return "mesh · plays chords";
+  if (g <= 1.15) return "critical · arpeggio";
+  return "tree · solo line";
+}
+
+/* strike where the pointer lands: nearest node fires                      */
+canvas.addEventListener("pointerdown", ev => {
+  const w = invMap(ev.clientX, ev.clientY);
+  let best = -1, bd = 1e9;
+  for (let i = 0; i < G.nodes.length; i++) {
+    const n = G.nodes[i];
+    const d = (n.x - w.x) ** 2 + (n.y - w.y) ** 2;
+    if (d < bd) { bd = d; best = i; }
+  }
+  if (best >= 0) { G.nodes[best].ref = 0; fireNode(best, 1.0, -1, tNow); }
+});
+
+/* ---------------------------------------------------------------- loop -- */
+
+// fast-forward the carving so the piece opens on a formed bed (001's work)
+for (let i = 0; i < 400; i++) { solvePressure(6); adapt(gamma, 0.55); }
+
+let last = performance.now(), tNow = 0, fpsAcc = 0, fpsN = 0;
+function frame(now) {
+  const dtms = now - last; last = now;
+  const dt = Math.min(dtms / 1000, 0.05);
+  tNow += dt;
+  fpsAcc += dtms; if (++fpsN === 30) { fpsEl.textContent = (30000 / fpsAcc).toFixed(0) + " fps"; fpsAcc = 0; fpsN = 0; }
+
+  // slow layer: the bed keeps being carved (001, at geological tempo)
+  solvePressure(SWEEPS);
+  adapt(gamma, DT_CARVE);
+
+  // fast layer: conduction
+  metronome(dt, tNow);
+  stepPulses(dt, tNow);
+
+  fade(0.16);                                        // pulses need a short tail, not 001's long memory
+  drawBed();
+  drawPulses();
+  drawDots();
+
+  regimeEl.textContent = timbreLabel(gamma) + " · " + pulses.length;
+  requestAnimationFrame(frame);
+}
+gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+gammaVal.textContent = gamma.toFixed(2);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
