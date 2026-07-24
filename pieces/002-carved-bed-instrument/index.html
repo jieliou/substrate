@@ -43,11 +43,12 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="title"><b>002 — carved bed as instrument</b><br>structure is the recording; pulses are the playback. click to strike a note.</div>
+<div id="title"><b>002 — carved bed as instrument</b><br>structure is the recording; pulses are the playback. click to strike — sound wakes on first touch.</div>
 <div id="hud">
   <span class="k">γ</span><span id="gamma-val">1.00</span>
   <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
   <span id="regime"></span>
+  <span class="k" id="snd" style="cursor:pointer">♪ asleep</span>
   <span class="k" id="fps"></span>
 </div>
 <script>
@@ -163,11 +164,69 @@ const MAX_PULSES = 900;       // hard safety
 
 const pulses = [];            // {edge, dir(+1 a→b / -1 b→a), t, e(nergy)}
 
+/* ---------------------------------------------------------------- audio --
+   The bed, played aloud. Rule: every sound has a visible cause — a pulse
+   arriving at a node. Pitch comes from the carved conductance of the edge
+   the pulse rode in on: wide beds ring low, capillaries ping high. Minor
+   pentatonic quantize keeps the physics honest without MIDI-demo cheese.
+   The instrument is silent until first touched (browser gesture rule
+   turned into a feature: sound wakes when you wake it).                  */
+
+let AC = null, master = null, delaySend = null;
+let muted = false, voices = 0;
+const VOICE_CAP = 12;
+const E_SOUND = 0.15;          // quieter arrivals stay visual-only — mesh regime chords, not mush
+const SCALE = [0, 3, 5, 7, 10];
+
+function ensureAudio() {
+  if (AC) { if (AC.state === "suspended") AC.resume(); return; }
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value = 0.22;
+  master.connect(AC.destination);
+  const delay = AC.createDelay(1.0); delay.delayTime.value = 0.23;
+  const fb = AC.createGain(); fb.gain.value = 0.22;
+  const wet = AC.createGain(); wet.gain.value = 0.15;
+  delaySend = AC.createGain();
+  delaySend.connect(delay); delay.connect(fb); fb.connect(delay);
+  delay.connect(wet); wet.connect(master);
+  sndEl.textContent = "♪ on";
+}
+
+function pluck(freq, gain, dur, type) {
+  if (!AC || muted || voices >= VOICE_CAP) return;
+  voices++;
+  const t = AC.currentTime;
+  const o = AC.createOscillator(); o.type = type || "triangle"; o.frequency.value = freq;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  o.connect(g); g.connect(master); g.connect(delaySend);
+  o.start(t); o.stop(t + dur + 0.05);
+  o.onended = () => { voices--; };
+}
+
+/* wide carved bed → low & full; thin capillary → high & faint */
+function noteForEdge(e) {
+  const Dn = Math.min(e.D / 0.55, 1.0);
+  const idx = Math.round((1 - Dn) * 14);            // 0..14 over ~3 pentatonic octaves
+  const deg = SCALE[idx % 5] + 12 * Math.floor(idx / 5);
+  return 110 * Math.pow(2, deg / 12);               // A2 base
+}
+
 function fireNode(i, energy, fromEdge, now) {
   const n = G.nodes[i];
   if (now < n.ref) return;
   n.ref = now + REFRACTORY;
   n.flash = Math.min(1, energy + 0.25);
+  // the audible layer: same event, same cause
+  if (i === G.sink) {
+    pluck(82.4, 0.30, 1.2, "sine");                 // the note lands: deep accent (E2)
+  } else if (fromEdge >= 0 && energy >= E_SOUND) {
+    pluck(noteForEdge(G.edges[fromEdge]), 0.05 + 0.20 * energy, 0.35 + 0.5 * energy);
+  } else if (fromEdge < 0) {
+    pluck(164.8, 0.10, 0.35, "sine");               // hand strike: soft tap (E3)
+  }
   // candidate onward edges: alive, not the one we came in on
   const cand = [];
   for (const k of G.adj[i]) {
@@ -439,6 +498,12 @@ const slider = document.getElementById("gamma");
 const gammaVal = document.getElementById("gamma-val");
 const regimeEl = document.getElementById("regime");
 const fpsEl = document.getElementById("fps");
+const sndEl = document.getElementById("snd");
+sndEl.addEventListener("click", () => {
+  if (!AC) { ensureAudio(); return; }               // waking counts as a click too
+  muted = !muted;
+  sndEl.textContent = muted ? "♪ off" : "♪ on";
+});
 let gamma = parseFloat(slider.value);
 slider.addEventListener("input", () => {
   gamma = parseFloat(slider.value);
@@ -452,6 +517,7 @@ function timbreLabel(g) {
 
 /* strike where the pointer lands: nearest node fires                      */
 canvas.addEventListener("pointerdown", ev => {
+  ensureAudio();                                    // browser gesture rule → the instrument wakes on first touch
   const w = invMap(ev.clientX, ev.clientY);
   let best = -1, bd = 1e9;
   for (let i = 0; i < G.nodes.length; i++) {
