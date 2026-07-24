@@ -49,6 +49,7 @@
   <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
   <span id="regime"></span>
   <span class="k" id="snd" style="cursor:pointer">♪ asleep</span>
+  <input id="vol" type="range" min="0" max="1" step="0.01" value="0.65" style="flex:none; width:84px">
   <span class="k" id="fps"></span>
 </div>
 <script>
@@ -178,11 +179,19 @@ const VOICE_CAP = 12;
 const E_SOUND = 0.15;          // quieter arrivals stay visual-only — mesh regime chords, not mush
 const SCALE = [0, 3, 5, 7, 10];
 
+/* perceptual volume: gain = 0.9·v² (quadratic feels linear to ears);
+   a compressor sits after master as a safety limiter so full volume
+   with a 12-voice chord doesn't clip.                                */
+function volGain(v) { return 0.9 * v * v; }
+
 function ensureAudio() {
   if (AC) { if (AC.state === "suspended") AC.resume(); return; }
   AC = new (window.AudioContext || window.webkitAudioContext)();
-  master = AC.createGain(); master.gain.value = 0.22;
-  master.connect(AC.destination);
+  master = AC.createGain(); master.gain.value = volGain(parseFloat(volEl.value));
+  const limiter = AC.createDynamicsCompressor();
+  limiter.threshold.value = -12; limiter.knee.value = 24;
+  limiter.ratio.value = 8; limiter.attack.value = 0.002; limiter.release.value = 0.12;
+  master.connect(limiter); limiter.connect(AC.destination);
   const delay = AC.createDelay(1.0); delay.delayTime.value = 0.23;
   const fb = AC.createGain(); fb.gain.value = 0.22;
   const wet = AC.createGain(); wet.gain.value = 0.15;
@@ -499,6 +508,10 @@ const gammaVal = document.getElementById("gamma-val");
 const regimeEl = document.getElementById("regime");
 const fpsEl = document.getElementById("fps");
 const sndEl = document.getElementById("snd");
+const volEl = document.getElementById("vol");
+volEl.addEventListener("input", () => {
+  if (AC && master) master.gain.setTargetAtTime(volGain(parseFloat(volEl.value)), AC.currentTime, 0.02);
+});
 sndEl.addEventListener("click", () => {
   if (!AC) { ensureAudio(); return; }               // waking counts as a click too
   muted = !muted;

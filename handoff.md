@@ -30,6 +30,8 @@
 - 音高來自脈衝騎進來那條邊的電導:寬河床鳴低音、細毛細管叮高音 — **結構決定音色**,踩 minor pentatonic(~3 個八度,A2 底)避 MIDI-demo 味。
 - 節制:E>0.15 才發聲(mesh regime 出和弦不出泥漿)、12-voice 上限、單條 feedback delay(0.23s)當空間。
 - 瀏覽器手勢限制轉成特性:樂器**被第一次觸摸時才醒**(♪ asleep → on;HUD ♪ 可靜音)。
+- **音量 UI**(07-24 深夜,Jie 回饋「有點小聲」):HUD ♪ 旁加 84px 滑桿,感知曲線 gain=0.9·v²,
+  預設 0.65(≈0.38 gain,比初版 0.22 大聲),master 後掛 DynamicsCompressor 當 limiter 防滿檔和弦爆音。
 - 驗證(結構層):AC running/48kHz、click 爆發 12 voices → 4 秒後衰減至 1、120fps 不掉、零 JS 錯。
   **誠實限制:我驗得了事件與包絡,聽不到聲音的美醜 — 音色/密度的品味判斷等 Jie 的耳朵**(策展人第一次真正先於藝術家體驗作品)。
 
