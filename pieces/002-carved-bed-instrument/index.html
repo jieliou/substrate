@@ -11,8 +11,8 @@
      frame: carving continues underneath (slow), conduction rides on top (fast).
      γ is no longer a shape knob; it is timbre — tree plays a solo line,
      mesh plays chords. */
-  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
     position: fixed; left: 16px; bottom: 14px; right: 16px;
     display: flex; align-items: baseline; gap: 14px;
@@ -39,6 +39,14 @@
     color: #545b63; user-select: none;
   }
   #title b { color: #9aa3ad; font-weight: 400; }
+  /* coarse pointers (touch): fatter targets, same look */
+  @media (pointer: coarse) {
+    #hud { bottom: 18px; gap: 12px; font-size: 13px; }
+    input[type=range] { height: 3px; }
+    input[type=range]::-webkit-slider-thumb { width: 22px; height: 22px; }
+    input[type=range]::-moz-range-thumb { width: 22px; height: 22px; }
+    #snd { padding: 8px 6px; }   /* bigger tap area for the mute toggle */
+  }
 </style>
 </head>
 <body>
@@ -530,7 +538,11 @@ function timbreLabel(g) {
   return "tree · solo line";
 }
 
-/* strike where the pointer lands: nearest node fires                      */
+/* strike where the pointer lands: nearest node fires.
+   pointerdown covers touch too; touch-action:none stops scroll/zoom from
+   eating the gesture, and contextmenu is suppressed so a long-press on
+   mobile strikes instead of opening a menu.                              */
+canvas.addEventListener("contextmenu", ev => ev.preventDefault());
 canvas.addEventListener("pointerdown", ev => {
   ensureAudio();                                    // browser gesture rule → the instrument wakes on first touch
   const w = invMap(ev.clientX, ev.clientY);
