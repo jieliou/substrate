@@ -65,7 +65,7 @@
   <span class="k">Δ</span><span id="det-val">0.000</span>
   <input id="det" type="range" min="0" max="0.5" step="0.005" value="0.10">
   <span class="k">K</span><span id="k-val">0.00</span>
-  <input id="k" type="range" min="0" max="2.0" step="0.01" value="0">
+  <input id="k" type="range" min="0" max="6.0" step="0.05" value="0">
   <span id="regime"></span>
   <span class="k" id="snd" style="cursor:pointer">♪ asleep</span>
   <input id="vol" type="range" min="0" max="1" step="0.01" value="0.65" style="flex:none; width:84px">
@@ -402,7 +402,29 @@ function stepPulses(dt, now) {
    P5  (next session) γ is therefore secretly the COHERENCE knob: tree
        regime (γ>1) collapses transit to one dominant path — a coherent
        delay line — so the same K should couple far harder, maybe lock.
-       The shape of the land decides whether rhythm survives crossing.   */
+       The shape of the land decides whether rhythm survives crossing.
+
+   MEASURED-3 (2026-07-29 04:3x, γ-sweep, measure3.py — P5 CONFIRMED AND
+   UPGRADED, then LOCK ACHIEVED):
+   M7  PD exact again: K=0 drift −0.0379 at γ=1.6 — the bed doesn't
+       touch the clocks; only the coupling.
+   M8  Tree coherence is real: same K=2 gives −17% drift (−34% in the
+       second half as the bed sharpens) vs mesh's +9% — 2-4× stronger.
+       Hear RATE barely changed (~1.6/s both terrains): it was never
+       about how often you hear, only about whether the arrivals agree.
+   M9  ⭐ THE SIGN FLIPPED WITH THE TERRAIN: sign=−1 repels on mesh,
+       attracts on tree. Single-path transit concentrates kicks at one
+       phase φ*, so the net effect inherits sign(sin 2πφ*) — the land
+       does not just set the volume of the ear, it decides WHAT you
+       hear: the same neighbor, attractive on one terrain, repulsive on
+       the other. (PF's asymmetry prediction, sharpened.)
+   M10 ⭐⭐ LOCK: γ=1.6, sign=−1, K=4 → drift −0.0018 (95% cancelled);
+       K=6 → +0.0016 ≈ full phase lock. And MEETINGS DOUBLE (8-10 → 16-20):
+       locked voices meet in step again — the seam sings like Δ=0 but
+       EARNED, negotiated through the land instead of set by the author.
+       K slider extended to 6 so hands can reach the lock regime.
+       The piece's thesis, measured end to end in one night:
+       deaf → reverb chamber → terrain flips the sign → lock.           */
 let phiA = 0, phiB = 0;
 const PERIOD_A = 2.4;
 const PSI_EVERY = 0.25;       // s — ψ sampling cadence for STATS
@@ -803,6 +825,7 @@ window.state = () => ({ phiA, phiB, psiU, K, detune, gamma, sign: PRC_SIGN, t: t
 window.setK = v => { K = v; kSlider.value = v; kVal.textContent = (+v).toFixed(2); };
 window.setDet = v => { detune = v; detSlider.value = v; detVal.textContent = (+v).toFixed(3); };
 window.setSign = v => { PRC_SIGN = v < 0 ? -1 : 1; };
+window.setGamma = v => { gamma = v; slider.value = v; gammaVal.textContent = (+v).toFixed(2); };
 </script>
 </body>
 </html>
