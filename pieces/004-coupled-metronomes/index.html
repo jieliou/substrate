@@ -192,9 +192,9 @@ const MAX_PULSES = 900;
 const pulses = [];            // {edge, dir, t, e, src}
 const sparks = [];            // {x, y, life, kind}  kind: 1 meeting / 0 shadow death
 const STATS = { meetings: 0, shadows: 0, meetX: [], meetT: [], shadowX: [], shadowT: [],
-  psi: [], psiT: [], slips: 0, hearA: 0, hearB: 0,
+  psi: [], psiT: [], psiU: [], slips: 0, hearA: 0, hearB: 0,
   reset() { this.meetings = 0; this.shadows = 0; this.meetX.length = 0; this.meetT.length = 0; this.shadowX.length = 0; this.shadowT.length = 0;
-    this.psi.length = 0; this.psiT.length = 0; this.slips = 0; this.hearA = 0; this.hearB = 0; } };
+    this.psi.length = 0; this.psiT.length = 0; this.psiU.length = 0; this.slips = 0; this.hearA = 0; this.hearB = 0; } };
 
 /* ---------------------------------------------------------------- audio --
    Two voices on one instrument. Voice A (ember) keeps 002's triangle,
@@ -384,25 +384,55 @@ function stepPulses(dt, now) {
        coupling sign (delayed PRC), i.e. hearing pushes them APART.
        Next session: hysteresis on the slip counter + full ψ-trace read;
        if (b) confirms, the piece's true finding is the misheard beat —
-       and the PRC sign (or an added τ compensation) becomes the knob.   */
+       and the PRC sign (or an added τ compensation) becomes the knob.
+
+   MEASURED-2 (2026-07-29 03:3x, unwrapped-ψ drift instrument, measure2.py —
+   VERDICT: both hypotheses held a piece of the truth):
+   M4  PA exact: K=0 drift −0.0379 cyc/s = theory to 4 decimals. The
+       instrument is trustworthy.
+   M5  Repulsion is REAL but weak: sign=−1 drift grows monotonically with
+       K (−0.0379 → −0.0404 → −0.0412 at K=0/1/2, +9% at K=2); sign=+1
+       flips it attractive (−0.0364 at K=1). The old "2 slips" counts were
+       jitter-inflated on top of a genuine ~7% effect.
+   M6  ⭐ WHY so weak — MULTIPATH DISPERSION: border strikes arrive from
+       fronts of many path lengths, smeared across the whole beat cycle,
+       so kicks land phase-incoherently and mostly cancel. The mesh is
+       not a delay line, it is a REVERB CHAMBER — it destroys the beat
+       information in transit. The web ear hears a hum, not a rhythm.
+   P5  (next session) γ is therefore secretly the COHERENCE knob: tree
+       regime (γ>1) collapses transit to one dominant path — a coherent
+       delay line — so the same K should couple far harder, maybe lock.
+       The shape of the land decides whether rhythm survives crossing.   */
 let phiA = 0, phiB = 0;
 const PERIOD_A = 2.4;
 const PSI_EVERY = 0.25;       // s — ψ sampling cadence for STATS
 let psiClock = 0, psiPrev = 0;
+/* SECOND PASS instrument (03:30): the wrapped-ψ slip counter was ambiguous
+   at the wrap boundary (kick jitter can double-count a crossing). ψu is
+   the UNWRAPPED relative phase, integrated directly — natural drift from
+   the frequency gap plus every kick's exact contribution. Drift rate
+   d(ψu)/dt is the clean verdict instrument: if |rate| grows with K the
+   coupling genuinely repels; if it stays at the deaf rate, the slip
+   counts were jitter. PRC_SIGN exposes the delayed-coupling test: −1 is
+   the type-II ear as designed; +1 is the same ear heard "the other way
+   round" (a τ-compensation in disguise).                                 */
+let psiU = 0;
+let PRC_SIGN = -1;
 
-function kick(phi, e) { return -(K / (2 * Math.PI)) * Math.sin(2 * Math.PI * phi) * Math.min(e, 1); }
+function kick(phi, e) { return PRC_SIGN * (K / (2 * Math.PI)) * Math.sin(2 * Math.PI * phi) * Math.min(e, 1); }
 
 function hear(who, e) {
   if (K <= 0) return;
-  if (who === 0) { phiA += kick(phiA, e); STATS.hearA++;
+  if (who === 0) { const d = kick(phiA, e); phiA += d; psiU -= d; STATS.hearA++;
     G.nodes[G.srcA].flash = Math.min(1.2, G.nodes[G.srcA].flash + 0.3); }
-  else           { phiB += kick(phiB, e); STATS.hearB++;
+  else           { const d = kick(phiB, e); phiB += d; psiU += d; STATS.hearB++;
     G.nodes[G.srcB].flash = Math.min(1.2, G.nodes[G.srcB].flash + 0.3); }
 }
 
 function metronomes(dt, now) {
   phiA += dt / PERIOD_A;
   phiB += dt / (PERIOD_A * (1 + detune));
+  psiU += dt / (PERIOD_A * (1 + detune)) - dt / PERIOD_A;
   if (phiA >= 1) {
     phiA -= 1;
     G.nodes[G.srcA].ref = 0;
@@ -422,6 +452,7 @@ function metronomes(dt, now) {
     if (psi - psiPrev > 0.5) STATS.slips++;     // B (slower) wraps downward past A
     psiPrev = psi;
     STATS.psi.push(psi); STATS.psiT.push(now);
+    STATS.psiU.push(+psiU.toFixed(4));
   }
 }
 
@@ -768,9 +799,10 @@ requestAnimationFrame(frame);
 
 /* debug hook — lets a headless verifier read AND drive the simulation */
 window.G = G; window.pulses = pulses; window.sparks = sparks; window.STATS = STATS;
-window.state = () => ({ phiA, phiB, K, detune, gamma, t: tNow });
+window.state = () => ({ phiA, phiB, psiU, K, detune, gamma, sign: PRC_SIGN, t: tNow });
 window.setK = v => { K = v; kSlider.value = v; kVal.textContent = (+v).toFixed(2); };
 window.setDet = v => { detune = v; detSlider.value = v; detVal.textContent = (+v).toFixed(3); };
+window.setSign = v => { PRC_SIGN = v < 0 ? -1 : 1; };
 </script>
 </body>
 </html>
