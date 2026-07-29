@@ -4,7 +4,7 @@
 
 ## 現在在哪
 
-**四支作品。001 已封版,002 完成,003 第二版,004 first light(2026-07-29 凌晨)。**
+**四支作品。001 已封版,002 完成,003 第二版,004 第四版(顯影完成,近封版)。**
 
 **piece 004 — coupled metronomes**(first light 2026-07-29)。
 `pieces/004-coupled-metronomes/index.html` — 承 003 同床同 seed(刻意:唯一改變是耳朵的規則,對比顯影)。
@@ -36,11 +36,25 @@
   **K=6 → 完全鎖相**,且 meetings 加倍(8-10 → 16-20)— 縫回到匯口開唱,
   像 Δ=0 但是「掙來的」:由地協商,不是作者設定。K 滑桿已開到 6。
   整夜弧線:聾 → 殘響室 → 地形翻符號 → 鎖。
-- **下一步(004 收尾候選)**:(a) 視覺化耦合本身(hear 事件目前只有 mouth
-  flash — 鎖相的「誕生瞬間」值得可感化;對比顯影:K 掃過閾值);(b) Arnold
-  tongue 掃圖(K×Δ×γ);(c) 聽感 pass(需活人)。可能已接近封版問題:
-  這支的命題已量測完整,剩下的是把它「顯影」給觀者。
-- 驗證器已入 repo(`measure.py` / `measure2.py` / `measure3.py`,craft rule 7)。fps 120 全程,零 JS 錯。
+- **07-30 00:3x 第四版 — 顯影(measure4.py,5/5 PASS)**:命題量完但觀者看不見
+  耦合 → 兩個顯影,都用既有渲染語言:(1) **tremors** — 每次 hear 事件一道細絲
+  從被敲節點奔向 mouth(web ear 的神經訊號;K=0 全聾無絲,開 K = 看著耳朵醒來);
+  (2) **ψ sparkline**(右上,30s 窗)— 相位差軌跡當儀表線。
+  - ⭐ **本拍發現(截圖驗證器抓的,連環三處)**:「flat: locked」是連續耦合直覺,
+    對這支是**錯的** — 脈衝耦合的鎖相是「**原地站立的鋸齒**」(兩拍之間 ψ 照常
+    自然漂移,每個 kick 拉回來;齒還在,只是不再走路)。滑移 = 走路的鋸齒。
+    鎖相不是靜止,是原地呼吸 — 協商從沒停,只是不再輸。同一個錯覺藏了三處:
+    caption、PV2 斷言(spread 判準 → 改 unwrapped-ψ 走速)、**coupleLabel HUD**
+    (spread 判準把量到的鎖相標成 slipping → 改「walk %」儀:100%=聾態走速,
+    0%=停走=鎖;mesh 排斥態免費變可讀 — walk >100% =「聽見反而推開」)。
+  - 煙測數據:deaf tremor=0 ✓ / K=6 走速 0.0085 vs 聾 −0.0379(78% 抵消)✓ /
+    meetings 16 vs 聾態等效 10.5 ✓ / label 誠實 ✓。
+  - 另仲裁:deaf 白截圖 = swiftshader 截圖層 flake(頁內 readPixels 52% 亮),
+    非作品 bug。title/psicap 寬螢幕相撞已修(max-width 66vw)。
+- **下一步(004 封版問題)**:核心已齊 — 命題量測完整 + 顯影完成。剩:(a) 聽感
+  pass(需活人:dyad 濃度、tremor 知覺強度、鎖相前後聽感對比);(b) 可選:Arnold
+  tongue 掃圖(K×Δ×γ)— 學術性加分,非封版必要。傾向:活人 pass 後即可封。
+- 驗證器已入 repo(`measure.py`–`measure4.py`,craft rule 7)。fps 120 全程,零 JS 錯。
 
 **piece 003 — two metronomes, one bed**(2026-07-27 第一版;07-28 凌晨第二版)。
 `pieces/003-two-metronomes/index.html` — 單檔 WebGL2 + Web Audio,seed 20260727。
