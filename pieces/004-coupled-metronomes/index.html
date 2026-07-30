@@ -212,10 +212,22 @@ const sparks = [];            // {x, y, life, kind}  kind: 1 meeting / 0 shadow 
    the pulse streaks so the tremor reads as "same world, faster wave".  */
 const tremors = [];           // {x0,y0,x1,y1,life,who,e} — plucks running to the ear
 const TREMOR_MAX = 140;
+/* FIFTH PASS instrument (2026-07-31): lock is a standing sawtooth — so the
+   next question is AT WHOSE TEMPO does it stand. fire counts + first/last
+   fire time give each voice's realised period under coupling; kickSum is
+   the signed phase correction each voice absorbed (how much ground it
+   gave), kickAbs how much it was pushed at all. Territory sampled as the
+   node census, because the web ear means territory IS ear count.          */
 const STATS = { meetings: 0, shadows: 0, meetX: [], meetT: [], shadowX: [], shadowT: [],
   psi: [], psiT: [], psiU: [], slips: 0, hearA: 0, hearB: 0,
+  fireA: 0, fireB: 0, tA0: null, tA1: null, tB0: null, tB1: null,
+  fireTA: [], fireTB: [],   // fire timestamps — lets a verifier rebuild ANY window
+  kickSumA: 0, kickSumB: 0, kickAbsA: 0, kickAbsB: 0,
   reset() { this.meetings = 0; this.shadows = 0; this.meetX.length = 0; this.meetT.length = 0; this.shadowX.length = 0; this.shadowT.length = 0;
-    this.psi.length = 0; this.psiT.length = 0; this.psiU.length = 0; this.slips = 0; this.hearA = 0; this.hearB = 0; } };
+    this.psi.length = 0; this.psiT.length = 0; this.psiU.length = 0; this.slips = 0; this.hearA = 0; this.hearB = 0;
+    this.fireA = 0; this.fireB = 0; this.tA0 = null; this.tA1 = null; this.tB0 = null; this.tB1 = null;
+    this.fireTA.length = 0; this.fireTB.length = 0;
+    this.kickSumA = 0; this.kickSumB = 0; this.kickAbsA = 0; this.kickAbsB = 0; } };
 
 /* ---------------------------------------------------------------- audio --
    Two voices on one instrument. Voice A (ember) keeps 002's triangle,
@@ -450,7 +462,37 @@ function stepPulses(dt, now) {
        EARNED, negotiated through the land instead of set by the author.
        K slider extended to 6 so hands can reach the lock regime.
        The piece's thesis, measured end to end in one night:
-       deaf → reverb chamber → terrain flips the sign → lock.           */
+       deaf → reverb chamber → terrain flips the sign → lock.
+
+   MEASURED-5 (2026-07-31 03:3x, measure5.py — AT WHOSE TEMPO? Two of
+   four predictions refuted, and both refutations are the finding):
+   M11 PG holds: at lock the two realised periods agree to ≤1% and the
+       fire counts equalise (17/15 deaf → 16/16, 17/17, 18/18 coupled).
+   M12 ⭐ PH REFUTED — the lock is not a compromise. K=4 Δ=0.10 locks at
+       2.32 s and K=6 Δ=0.05 at 2.28 s: FASTER than either voice alone
+       (naturals 2.40 and 2.64 / 2.52). The kick budget says why: the
+       DIFFERENCE of the two kick sums pays off the detuning — that is
+       the lock, and it checks out arithmetically (K=6 Δ=0.10:
+       1.047−(−0.513)=1.561 vs 1.516 of natural drift owed) — while the
+       COMMON MODE is net phase injected into both. Listening here is
+       not zero-sum: they hurry each other into a third tempo that
+       belongs to neither. Only at K=6 Δ=0.10 did the beat land inside
+       the bracket, and that condition is run-to-run variable (2.45 and
+       2.52 in two runs) — P4's intermittency, seen from the tempo side.
+   M13 ⭐ PI REFUTED AT THE ROOT — coupling EQUALISES TERRITORY. I
+       predicted unequal ears (web ear ⇒ bigger territory hears more ⇒
+       concedes more). Deaf census is lopsided, 34 nodes to 13, because
+       the faster voice claims more. Turn the ears on and it goes to
+       parity and sometimes past it (26/21, 20/27, 23/24) — equal firing
+       rates mean equal claiming rates. So hear counts come out almost
+       exactly equal (34/34, 32/33, 36/36) and the asymmetry I was
+       hunting never forms. The ear does not just synchronise the
+       clocks, it redistributes the land.
+   M14 Lock ≠ in step. K=6 Δ=0.05 is the tightest lock measured (drift
+       0.0002) yet its meetings DROP below deaf (7 vs 10): locked at a
+       phase offset that keeps them from arriving together — P3's
+       nonzero lag, now with an audible consequence. Agreeing on the
+       beat is not agreeing on the downbeat.                            */
 let phiA = 0, phiB = 0;
 const PERIOD_A = 2.4;
 const PSI_EVERY = 0.25;       // s — ψ sampling cadence for STATS
@@ -466,14 +508,39 @@ let psiClock = 0, psiPrev = 0;
    round" (a τ-compensation in disguise).                                 */
 let psiU = 0;
 let PRC_SIGN = -1;
+/* FIFTH PASS (2026-07-31) — the realised beat. Measured this session:
+   when the pair locks it does NOT split the difference between 2.4 s and
+   2.4(1+Δ) s. Two of three locked runs came out FASTER than either voice
+   alone (K=4 Δ=0.10 → 2.32 s; K=6 Δ=0.05 → 2.28 s, both naturals ≥ 2.4).
+   The kick budget explains it: the DIFFERENCE of the two voices' kick
+   sums pays off the detuning — that is the lock — while their COMMON
+   MODE is net phase injected into both, a free acceleration nobody
+   asked for. Listening is not zero-sum here: they hurry each other into
+   a third tempo that belongs to neither. The HUD carries the realised
+   beat so a hand can watch it leave the bracket.
+
+   Instrument note (same trap as the fourth pass, caught by the smoke
+   test): an EMA over intervals reported 2.64 s where the run's true
+   common period was 2.52 s. Under lock the intervals themselves are a
+   sawtooth — each kick moves the next fire — so any short-memory
+   estimator reads a swing as a value. Fixed window of the last 8
+   intervals per voice instead: mean over ≳ 20 s, longer than the
+   sawtooth, short enough to follow a hand on the slider.                */
+const PER_WIN = 8;
+let lastFireA = null, lastFireB = null;
+const perBufA = [], perBufB = [];
+function pushPer(buf, iv) { buf.push(iv); if (buf.length > PER_WIN) buf.shift(); }
+function meanPer(buf) { return buf.length < 3 ? null : buf.reduce((a, b) => a + b, 0) / buf.length; }
 
 function kick(phi, e) { return PRC_SIGN * (K / (2 * Math.PI)) * Math.sin(2 * Math.PI * phi) * Math.min(e, 1); }
 
 function hear(who, e, x, y) {
   if (K <= 0) return;
   if (who === 0) { const d = kick(phiA, e); phiA += d; psiU -= d; STATS.hearA++;
+    STATS.kickSumA += d; STATS.kickAbsA += Math.abs(d);
     G.nodes[G.srcA].flash = Math.min(1.2, G.nodes[G.srcA].flash + 0.3); }
   else           { const d = kick(phiB, e); phiB += d; psiU += d; STATS.hearB++;
+    STATS.kickSumB += d; STATS.kickAbsB += Math.abs(d);
     G.nodes[G.srcB].flash = Math.min(1.2, G.nodes[G.srcB].flash + 0.3); }
   /* the pluck becomes visible: a tremor runs the silk to the ear.
      (the designed mouth-arrival ear passes no coords — no thread)       */
@@ -491,11 +558,17 @@ function metronomes(dt, now) {
     phiA -= 1;
     G.nodes[G.srcA].ref = 0;
     fireNode(G.srcA, 1.0, -1, now, 0);
+    STATS.fireA++; if (STATS.tA0 === null) STATS.tA0 = now; STATS.tA1 = now; STATS.fireTA.push(now);
+    if (lastFireA !== null) pushPer(perBufA, now - lastFireA);
+    lastFireA = now;
   }
   if (phiB >= 1) {
     phiB -= 1;
     G.nodes[G.srcB].ref = 0;
     fireNode(G.srcB, 1.0, -1, now, 1);
+    STATS.fireB++; if (STATS.tB0 === null) STATS.tB0 = now; STATS.tB1 = now; STATS.fireTB.push(now);
+    if (lastFireB !== null) pushPer(perBufB, now - lastFireB);
+    lastFireB = now;
   }
   /* ψ = wrapped relative phase; a wrap of ψ is one full slip of B past A */
   psiClock += dt;
@@ -884,9 +957,22 @@ function coupleLabel() {
   const rate = (STATS.psiU[n - 1] - STATS.psiU[n - w]) / (STATS.psiT[n - 1] - STATS.psiT[n - w]);
   const natural = detune / (PERIOD_A * (1 + detune));
   const walk = Math.round(Math.abs(rate / natural) * 100);
-  if (walk < 15) return "locked · walk " + walk + "%";
-  if (walk < 60) return "negotiating · walk " + walk + "%";
-  return "slipping · walk " + walk + "%";
+  const head = walk < 15 ? "locked" : walk < 60 ? "negotiating" : "slipping";
+  return head + " · walk " + walk + "% " + beatLabel();
+}
+/* FIFTH PASS: whose tempo is it? Naturals are 2.4 and 2.4(1+Δ); the
+   realised beat is neither, and often faster than both — the sign that
+   coupling injects rather than averages. Shown only once both voices
+   have a stable interval estimate, and only when the ears are on.       */
+function beatLabel() {
+  const pa = meanPer(perBufA), pb = meanPer(perBufB);
+  if (pa === null || pb === null) return "";
+  const beat = 0.5 * (pa + pb);
+  const lo = PERIOD_A, hi = PERIOD_A * (1 + detune);
+  const s = "· beat " + beat.toFixed(2) + "s";
+  if (beat < lo - 0.01) return s + " — faster than both";
+  if (beat > hi + 0.01) return s + " — slower than both";
+  return s;
 }
 
 canvas.addEventListener("contextmenu", ev => ev.preventDefault());
