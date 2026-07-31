@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>005 — chords as topology</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* substrate 005 — the bed grows a chord memory.
+     Parent is 003 (deaf clocks, same bed, same seed — deliberately NOT 004:
+     no ears here, so whatever structure appears is memory, not sync).
+     In 003 a meeting is an EVENT: both fronts in step at a node, one white
+     spark, one dyad, gone. Nothing remembers it. 005 adds ONE rule: when
+     the two voices co-arrive, the whole locally co-active node-set
+     crystallizes into an ORGAN (a true hyperedge). An organ is its member
+     set or nothing — it conducts (sounds as a chord, flashes as one body)
+     only when ALL its members fire inside one window again. Repetition
+     feeds it (weight up); neglect starves it (decay, death). Harmony moves
+     from time to space: the seam's history becomes structure in the bed.
+
+     PREDICTIONS (written before first measurement, craft rule 8):
+       P1 formation locus — Δ=0.10: meetings cluster at the mouth (003:
+          meanX≈11, sd 2.7) → few organs (≤3 in 60s), all near the sink.
+       P2 Δ writes geography — Δ=0.35+: the wandering seam scatters organs
+          along its path; more organs, weaker each. Δ=0 grows ONE huge
+          mouth-organ (the cathedral); detune shatters it into chapels.
+       P3 starvation inversion — TAU=25s vs revisit interval 2.4(1+Δ)/Δ:
+          Δ=0.05 (slip 50s) organs STARVE between meeting-clusters;
+          Δ=0.20-0.35 (slip 7-14s) organs thrive. Predict survival rate
+          (organs conducting ≥2×) peaks at MID Δ, not at tight rhythm.
+       P4 conduction is rarer than meeting — the full-member window is
+          stricter than a pairwise coincide: conducts/meetings < 0.5.
+          If ≈1, the organ is only echoing meetings (locality too narrow —
+          that itself would be the finding).                              */
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
+  #hud {
+    position: fixed; left: 16px; bottom: 14px; right: 16px;
+    display: flex; align-items: baseline; gap: 12px;
+    font: 300 11px/1.4 "IBM Plex Mono", ui-monospace, monospace;
+    color: #9aa3ad; user-select: none; -webkit-user-select: none;
+  }
+  #hud .k { color: #545b63; }
+  #gamma-val, #det-val { color: #cdd6df; min-width: 4.5ch; display: inline-block; }
+  #regime { color: #6d7680; min-width: 18ch; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1; max-width: 260px; height: 1px; background: #2a2f34; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 9px; height: 9px; border-radius: 0; background: #cdd6df; cursor: ew-resize;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 9px; height: 9px; border-radius: 0; border: none; background: #cdd6df; cursor: ew-resize;
+  }
+  #title {
+    position: fixed; left: 16px; top: 14px;
+    font: 300 11px/1.5 "IBM Plex Mono", ui-monospace, monospace;
+    color: #545b63; user-select: none;
+  }
+  #title b { color: #9aa3ad; font-weight: 400; }
+  @media (pointer: coarse) {
+    #hud { bottom: 18px; gap: 10px; font-size: 13px; }
+    input[type=range] { height: 3px; }
+    input[type=range]::-webkit-slider-thumb { width: 22px; height: 22px; }
+    input[type=range]::-moz-range-thumb { width: 22px; height: 22px; }
+    #snd { padding: 8px 6px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title"><b>005 — chords as topology</b><br>the bed remembers its chords. where the two voices arrive in step, the co-active nodes crystallize into an organ — it sounds only as a whole, feeds on repetition, starves when the seam moves on. click to strike — sound wakes on first touch.</div>
+<div id="hud">
+  <span class="k">γ</span><span id="gamma-val">1.00</span>
+  <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
+  <span class="k">Δ</span><span id="det-val">0.000</span>
+  <input id="det" type="range" min="0" max="0.5" step="0.005" value="0">
+  <span id="regime"></span>
+  <span class="k" id="snd" style="cursor:pointer">♪ asleep</span>
+  <input id="vol" type="range" min="0" max="1" step="0.01" value="0.65" style="flex:none; width:84px">
+  <span class="k" id="fps"></span>
+</div>
+<script>
+"use strict";
+
+/* ---------------------------------------------------------------- graph --
+   New bed, new seed — this proposition needs its own geography: two
+   sources at the old river's mouth positions, one sink at the center.
+   001's estuary becomes 003's second voice.                              */
+
+const COLS = 24, ROWS = 17;
+const JITTER = 0.36;
+const I0 = 1.0;
+const D_INIT = 0.35, D_MIN = 1e-4;
+const SWEEPS = 14;
+const DT_CARVE = 0.10;
+
+function buildGraph(seed) {
+  let s = seed >>> 0;
+  const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+  const nodes = [], index = [];
+  for (let r = 0; r < ROWS; r++) {
+    index.push([]);
+    for (let c = 0; c < COLS; c++) {
+      const x = c + (r % 2 ? 0.5 : 0) + (rnd() - 0.5) * JITTER;
+      const y = r * 0.866 + (rnd() - 0.5) * JITTER;
+      index[r].push(nodes.length);
+      nodes.push({ x, y, p: 0, inj: 0, ref: 0, flash: 0, owner: -1, fired: -1e9 });
+    }
+  }
+  const edges = [];
+  const addEdge = (a, b) => {
+    const dx = nodes[a].x - nodes[b].x, dy = nodes[a].y - nodes[b].y;
+    edges.push({ a, b, L: Math.hypot(dx, dy), D: D_INIT * (0.7 + 0.6 * rnd()), Q: 0 });
+  };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const i = index[r][c];
+    if (c + 1 < COLS) addEdge(i, index[r][c + 1]);
+    if (r + 1 < ROWS) {
+      addEdge(i, index[r + 1][c]);
+      const d = r % 2 ? c + 1 : c - 1;
+      if (d >= 0 && d < COLS) addEdge(i, index[r + 1][d]);
+    }
+  }
+  const adj = nodes.map(() => []);
+  edges.forEach((e, k) => { adj[e.a].push(k); adj[e.b].push(k); });
+
+  const mid = (ROWS / 2) | 0;
+  const srcA = index[mid][0];
+  const srcB = index[mid][COLS - 1];
+  const sink = index[mid][(COLS / 2) | 0];
+  nodes[srcA].inj = +I0;
+  nodes[srcB].inj = +I0;
+  nodes[sink].inj = -2 * I0;
+
+  return { nodes, edges, adj, srcA, srcB, sink };
+}
+
+const G = buildGraph(20260727);
+
+/* --------------------------------------------------------------- carving --
+   Same solver, two rivers now: both sources push toward the center delta.
+   Each side carves its own watershed; the fast layer will contest the
+   ridge between them.                                                    */
+
+function solvePressure(sweeps) {
+  const { nodes, edges, adj, sink } = G;
+  for (let sweep = 0; sweep < sweeps; sweep++) {
+    for (let i = 0; i < nodes.length; i++) {
+      if (i === sink) { nodes[i].p = 0; continue; }
+      let wsum = 0, acc = nodes[i].inj;
+      const ne = adj[i];
+      for (let k = 0; k < ne.length; k++) {
+        const e = edges[ne[k]];
+        const j = e.a === i ? e.b : e.a;
+        const w = e.D / e.L;
+        wsum += w; acc += w * nodes[j].p;
+      }
+      if (wsum > 0) nodes[i].p = acc / wsum;
+    }
+  }
+}
+
+function adapt(gamma, dt) {
+  const { nodes, edges } = G;
+  for (const e of edges) {
+    e.Q = (e.D / e.L) * (nodes[e.a].p - nodes[e.b].p);
+    const q = Math.abs(e.Q) * 2.2;
+    const fq = Math.pow(q, gamma);
+    const target = fq / (1 + fq);
+    e.D += dt * (target - e.D);
+    if (e.D < D_MIN) e.D = D_MIN;
+  }
+}
+
+/* ---------------------------------------------------------------- pulses --
+   002's conduction organ, with citizenship. Every pulse belongs to the
+   voice that launched it (src 0 = ember / A, src 1 = cyan / B); children
+   inherit. The interference law, in three lines:
+     - free node        → fire, claim, branch (as 002)
+     - refractory, same voice  → die silently (wave discipline, as 002)
+     - refractory, OTHER voice → this is the border:
+         arrived within COINCIDE of the rival's firing → MEETING —
+           both voices present at once: white spark, dyad rings
+         arrived later inside the shadow → SHADOW DEATH —
+           dim spark, no sound. Destructive interference is a silence.   */
+
+const PULSE_SPEED = 2.6;
+const D_LIVE = 0.045;
+const REFRACTORY = 0.90;      // wider than 002's 0.38 — the destructive band must cover
+                              // a real fraction of the beat cycle, or the border is inert
+const COINCIDE = 0.15;        // s — "in step" window at the seam
+const BRANCH_MAX = 3;
+const E_DECAY = 0.88;         // fronts must reach the seam with singing energy
+                              // (0.80^12 hops ≈ 0.07 = a front that arrives mute)
+const E_CUTOFF = 0.05;
+const MAX_PULSES = 900;
+
+const pulses = [];            // {edge, dir, t, e, src}
+const sparks = [];            // {x, y, life, kind}  kind: 1 meeting / 0 shadow death
+
+/* ---------------------------------------------------------------- organs --
+   The one new rule. On a meeting, gather every node that fired within
+   FORM_W of now AND sits within R_LOC of the meeting point, both voices
+   required, at least CHORD_MIN members — that local ensemble is the chord
+   candidate. It either strengthens an existing organ (Jaccard ≥ MERGE_J:
+   same chord, sung again) or is born as a new one (w = 1).
+   Conduction: an organ fires as ONE BODY iff every member re-fired inside
+   CONDUCT_W — no partial credit, a hyperedge does not decompose into
+   pairs. Conduction feeds it (w += CONDUCT_FEED); time starves it
+   (exponential decay, TAU chosen so the seam's revisit interval — the
+   003 slip period 2.4(1+Δ)/Δ — decides survival). Dead organs (w < W_DIE)
+   are removed; the bed forgets what stops being sung.                    */
+const FORM_W = 0.30;          // s — co-activation window for formation
+const CONDUCT_W = 0.30;       // s — full-member window for conduction
+const R_LOC = 2.4;            // spatial radius of "one chord" around a meeting
+const CHORD_MIN = 3;          // a chord is more than 003's dyad
+const CHORD_MAX = 8;          // cap membership — organs stay local
+const MERGE_J = 0.5;          // Jaccard overlap → same organ, strengthen
+const FORM_FEED = 1.0;        // weight gained on formation / re-formation
+const CONDUCT_FEED = 0.5;     // weight gained on conduction
+const TAU = 25;               // s — decay constant (starvation clock)
+const W_DIE = 0.30;           // below this the organ dies
+const ORGAN_REF = 0.6;        // s — organ refractory after conducting
+const ORGANS = [];            // {members:[nodeIdx], w, born, lastFed, ref, flash}
+
+const STATS = { meetings: 0, shadows: 0, meetX: [], meetT: [], shadowX: [], shadowT: [],
+  organsFormed: 0, organsDied: 0, conducts: 0, reinforced: 0, conductT: [],
+  reset() { this.meetings = 0; this.shadows = 0; this.meetX.length = 0; this.meetT.length = 0;
+    this.shadowX.length = 0; this.shadowT.length = 0;
+    this.organsFormed = 0; this.organsDied = 0; this.conducts = 0; this.reinforced = 0; this.conductT.length = 0; } };
+
+/* ---------------------------------------------------------------- audio --
+   Two voices on one instrument. Voice A (ember) keeps 002's triangle,
+   minor pentatonic from A2. Voice B (cyan) speaks in sine, same scale a
+   fifth up from E3 — the two pentatonics share most of their notes, so
+   meetings can ring as consonance instead of mush. A meeting plays the
+   dyad: the edge's note plus its fifth. A shadow death plays nothing —
+   the border is audible as the place where the music stops.             */
+
+let AC = null, master = null, delaySend = null;
+let muted = false, voices = 0;
+const VOICE_CAP = 12;
+const E_SOUND = 0.15;
+const SCALE = [0, 3, 5, 7, 10];
+
+function volGain(v) { return 0.9 * v * v; }
+
+function ensureAudio() {
+  if (AC) { if (AC.state === "suspended") AC.resume(); return; }
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value = volGain(parseFloat(volEl.value));
+  const limiter = AC.createDynamicsCompressor();
+  limiter.threshold.value = -12; limiter.knee.value = 24;
+  limiter.ratio.value = 8; limiter.attack.value = 0.002; limiter.release.value = 0.12;
+  master.connect(limiter); limiter.connect(AC.destination);
+  const delay = AC.createDelay(1.0); delay.delayTime.value = 0.23;
+  const fb = AC.createGain(); fb.gain.value = 0.22;
+  const wet = AC.createGain(); wet.gain.value = 0.15;
+  delaySend = AC.createGain();
+  delaySend.connect(delay); delay.connect(fb); fb.connect(delay);
+  delay.connect(wet); wet.connect(master);
+  sndEl.textContent = "♪ on";
+}
+
+function pluck(freq, gain, dur, type) {
+  if (!AC || muted || voices >= VOICE_CAP) return;
+  voices++;
+  const t = AC.currentTime;
+  const o = AC.createOscillator(); o.type = type || "triangle"; o.frequency.value = freq;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  o.connect(g); g.connect(master); g.connect(delaySend);
+  o.start(t); o.stop(t + dur + 0.05);
+  o.onended = () => { voices--; };
+}
+
+/* voice A from A2, voice B a fifth up from E3; both pentatonic */
+function noteForEdge(e, src) {
+  const Dn = Math.min(e.D / 0.55, 1.0);
+  const idx = Math.round((1 - Dn) * 14);
+  const deg = SCALE[idx % 5] + 12 * Math.floor(idx / 5);
+  return (src === 1 ? 164.81 : 110) * Math.pow(2, deg / 12);
+}
+const VOICE_WAVE = ["triangle", "sine"];
+
+function fireNode(i, energy, fromEdge, now, src) {
+  const n = G.nodes[i];
+  if (now < n.ref) {
+    /* the border: a rival's front hits a claimed node */
+    if (n.owner >= 0 && n.owner !== src) {
+      if (now - n.fired < COINCIDE) {
+        /* MEETING — both fronts in step: the seam sings */
+        n.flash = Math.min(1.3, n.flash + 0.7);
+        sparks.push({ x: n.x, y: n.y, life: 1.0, kind: 1 });
+        STATS.meetings++; STATS.meetX.push(n.x); STATS.meetT.push(now);
+        if (fromEdge >= 0 && energy >= E_SOUND * 0.7) {
+          const f = noteForEdge(G.edges[fromEdge], src);
+          pluck(f, 0.06 + 0.18 * energy, 0.5 + 0.5 * energy, VOICE_WAVE[src]);
+          pluck(f * 1.5, 0.04 + 0.12 * energy, 0.5 + 0.5 * energy, "sine");
+        }
+        formOrgan(i, now);          /* 005: the coincidence tries to become structure */
+      } else {
+        /* SHADOW DEATH — destructive interference, rendered as silence.
+           The spark remembers WHO cast the shadow: during the long silences
+           between meeting-clusters (maxGap grows 2.4s→8.3s as Δ→0.5), these
+           are the only ink the border has — hue them by the killer and the
+           walking fault line becomes legible without a single note.         */
+        sparks.push({ x: n.x, y: n.y, life: 0.7, kind: 0, own: n.owner });
+        STATS.shadows++; STATS.shadowX.push(n.x); STATS.shadowT.push(now);
+      }
+    }
+    return;
+  }
+  n.ref = now + REFRACTORY;
+  n.fired = now;
+  n.owner = src;
+  n.flash = Math.min(1, energy + 0.25);
+  if (i === G.sink) {
+    pluck(82.4, 0.30, 1.2, "sine");                 // the note lands: deep accent (E2)
+  } else if (fromEdge >= 0 && energy >= E_SOUND) {
+    pluck(noteForEdge(G.edges[fromEdge], src), 0.05 + 0.20 * energy, 0.35 + 0.5 * energy, VOICE_WAVE[src]);
+  } else if (fromEdge < 0) {
+    pluck(src === 1 ? 246.9 : 164.8, 0.10, 0.35, "sine");   // hand strike: soft tap
+  }
+  const cand = [];
+  for (const k of G.adj[i]) {
+    if (k === fromEdge) continue;
+    const e = G.edges[k];
+    if (e.D > D_LIVE) cand.push(k);
+  }
+  if (!cand.length) return;
+  cand.sort((a, b) => G.edges[b].D - G.edges[a].D);
+  const take = cand.slice(0, BRANCH_MAX);
+  const Dmax = G.edges[take[0]].D;
+  for (const k of take) {
+    const e = G.edges[k];
+    const share = Math.pow(e.D / Dmax, 0.6);
+    const child = energy * E_DECAY * share;
+    if (child < E_CUTOFF || pulses.length >= MAX_PULSES) continue;
+    pulses.push({ edge: k, dir: e.a === i ? +1 : -1, t: 0, e: child, src });
+  }
+}
+
+function stepPulses(dt, now) {
+  for (let i = pulses.length - 1; i >= 0; i--) {
+    const p = pulses[i];
+    const e = G.edges[p.edge];
+    if (e.D < D_LIVE * 0.6) { pulses.splice(i, 1); continue; }
+    const v = PULSE_SPEED * (0.25 + 1.5 * Math.min(e.D, 1));
+    p.t += v * dt / e.L;
+    if (p.t >= 1) {
+      const arrive = p.dir > 0 ? e.b : e.a;
+      const src = p.src;
+      pulses.splice(i, 1);
+      fireNode(arrive, p.e, p.edge, now, src);
+      if (arrive === G.sink) G.nodes[G.sink].flash = 1.4;
+    }
+  }
+  for (const n of G.nodes) n.flash = Math.max(0, n.flash - 2.2 * dt);
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.life -= (s.kind ? 2.0 : 3.0) * dt;
+    if (s.life <= 0) sparks.splice(i, 1);
+  }
+}
+
+/* ------------------------------------------------------- organ mechanics -- */
+
+function formOrgan(center, now) {
+  const cn = G.nodes[center];
+  /* gather the local co-active ensemble: fired within FORM_W, within R_LOC */
+  const cand = [];
+  let hasA = false, hasB = false;
+  for (let j = 0; j < G.nodes.length; j++) {
+    const n = G.nodes[j];
+    if (now - n.fired > FORM_W || n.owner < 0) continue;
+    const dx = n.x - cn.x, dy = n.y - cn.y;
+    if (dx * dx + dy * dy > R_LOC * R_LOC) continue;
+    cand.push(j);
+    if (n.owner === 0) hasA = true; else hasB = true;
+  }
+  if (!hasA || !hasB || cand.length < CHORD_MIN) return;   // a chord spans both voices
+  if (cand.length > CHORD_MAX) {
+    cand.sort((a, b) => {
+      const na = G.nodes[a], nb = G.nodes[b];
+      return ((na.x-cn.x)**2 + (na.y-cn.y)**2) - ((nb.x-cn.x)**2 + (nb.y-cn.y)**2);
+    });
+    cand.length = CHORD_MAX;
+  }
+  const set = new Set(cand);
+  /* same chord sung again? Jaccard against living organs */
+  let best = null, bestJ = 0;
+  for (const o of ORGANS) {
+    let inter = 0;
+    for (const m of o.members) if (set.has(m)) inter++;
+    const j = inter / (o.members.length + set.size - inter);
+    if (j > bestJ) { bestJ = j; best = o; }
+  }
+  if (best && bestJ >= MERGE_J) {
+    best.w += FORM_FEED; best.lastFed = now; STATS.reinforced++;
+  } else {
+    /* ref at birth: an organ cannot conduct on its own formation frame —
+       conduction counts RE-performances, not the founding coincidence     */
+    ORGANS.push({ members: cand.slice(), w: FORM_FEED, born: now, lastFed: now, ref: now + ORGAN_REF, flash: 0 });
+    STATS.organsFormed++;
+  }
+}
+
+function chordForOrgan(o) {
+  /* each member contributes its strongest edge's note; up to 4, deduped */
+  const freqs = new Set();
+  for (const m of o.members) {
+    let bestK = -1, bestD = 0;
+    for (const k of G.adj[m]) if (G.edges[k].D > bestD) { bestD = G.edges[k].D; bestK = k; }
+    if (bestK >= 0) freqs.add(noteForEdge(G.edges[bestK], G.nodes[m].owner === 1 ? 1 : 0));
+    if (freqs.size >= 4) break;
+  }
+  return [...freqs];
+}
+
+function stepOrgans(dt, now) {
+  for (let i = ORGANS.length - 1; i >= 0; i--) {
+    const o = ORGANS[i];
+    o.w *= Math.exp(-dt / TAU);                      // starvation clock
+    o.flash = Math.max(0, o.flash - 1.6 * dt);
+    if (o.w < W_DIE) { ORGANS.splice(i, 1); STATS.organsDied++; continue; }
+    if (now < o.ref) continue;
+    /* conduction: ALL members inside one window — the hyperedge law */
+    let all = true;
+    for (const m of o.members) if (now - G.nodes[m].fired > CONDUCT_W) { all = false; break; }
+    if (!all) continue;
+    o.ref = now + ORGAN_REF;
+    o.w += CONDUCT_FEED; o.lastFed = now;
+    o.flash = 1.0;
+    STATS.conducts++; STATS.conductT.push(now);
+    const gain = 0.05 + 0.05 * Math.log1p(o.w);
+    for (const f of chordForOrgan(o)) pluck(f, gain, 1.3, "sine");
+    for (const m of o.members) {                     // one body: every member flashes
+      const n = G.nodes[m];
+      n.flash = Math.min(1.2, n.flash + 0.5);
+    }
+  }
+}
+
+/* two metronomes. A keeps 002's pulse of 2.4 s; B's period stretches with
+   Δ. At Δ=0 they fire in step forever (both counters started together);
+   any Δ>0 makes B slip — one full beat every 2.4·(1+Δ)/Δ seconds — and
+   the border wanders at exactly that beat frequency.                     */
+let metroA = 0, metroB = 0;
+const PERIOD_A = 2.4;
+function metronomes(dt, now) {
+  metroA += dt; metroB += dt;
+  if (metroA >= PERIOD_A) {
+    metroA -= PERIOD_A;
+    G.nodes[G.srcA].ref = 0;
+    fireNode(G.srcA, 1.0, -1, now, 0);
+  }
+  const pB = PERIOD_A * (1 + detune);
+  if (metroB >= pB) {
+    metroB -= pB;
+    G.nodes[G.srcB].ref = 0;
+    fireNode(G.srcB, 1.0, -1, now, 1);
+  }
+}
+
+/* ---------------------------------------------------------------- webgl -- */
+const canvas = document.getElementById("c");
+const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true, antialias: false, alpha: false });
+
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+/* bed: unchanged cold memory ramp — neutral ground both voices ride.      */
+const edgeProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in float a_v;
+  layout(location=2) in float a_heat;
+  out float v; out float heat;
+  void main(){ v = a_v; heat = a_heat; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float;
+  in float v; in float heat; out vec4 o;
+  void main(){
+    float core = exp(-v*v*5.0);
+    float halo = exp(-v*v*1.2) * 0.35;
+    float a = (core + halo) * heat;
+    vec3 deep = vec3(0.05, 0.09, 0.13);
+    vec3 steel= vec3(0.16, 0.30, 0.42);
+    vec3 col = mix(deep, steel, smoothstep(0.0, 1.0, heat));
+    o = vec4(col * a, 1.0);
+  }`);
+
+/* pulses: two ramps, chosen per-vertex by citizenship.
+   voice A: ember -> warm white (002's inheritance)
+   voice B: cyan  -> ice white                                             */
+const pulseProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in float a_v;
+  layout(location=2) in float a_e;
+  layout(location=3) in float a_src;
+  out float v; out float en; out float sc;
+  void main(){ v = a_v; en = a_e; sc = a_src; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float;
+  in float v; in float en; in float sc; out vec4 o;
+  void main(){
+    float core = exp(-v*v*6.0);
+    float a = core * pow(en, 0.65);
+    vec3 baseA = vec3(1.0, 0.52, 0.18), tipA = vec3(1.05, 0.98, 0.88);
+    vec3 baseB = vec3(0.20, 0.58, 0.95), tipB = vec3(0.88, 0.97, 1.05);
+    vec3 base = mix(baseA, baseB, sc);
+    vec3 tip  = mix(tipA,  tipB,  sc);
+    vec3 col = mix(base, tip, en * core * 0.8);
+    o = vec4(col * a, 1.0);
+  }`);
+
+const fadeProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  void main(){ gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float; uniform float u_fade; out vec4 o;
+  void main(){ o = vec4(0., 0., 0., u_fade); }`);
+const u_fade = gl.getUniformLocation(fadeProg, "u_fade");
+
+const dotProg = program(`#version 300 es
+  layout(location=0) in vec2 a_pos;
+  layout(location=1) in vec2 a_corner;
+  layout(location=2) in vec3 a_col;
+  out vec2 rel; out vec3 col;
+  void main(){ rel = a_corner; col = a_col; gl_Position = vec4(a_pos, 0., 1.); }`,
+`#version 300 es
+  precision highp float; in vec2 rel; in vec3 col; out vec4 o;
+  void main(){
+    float r = length(rel);
+    float a = max(exp(-r*r*3.0) - 0.05, 0.0) * 1.053;
+    o = vec4(col * a, 1.0);
+  }`);
+
+const quadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,-1, 1,1, -1,1]), gl.STATIC_DRAW);
+
+const edgeBuf = gl.createBuffer();
+const pulseBuf = gl.createBuffer();
+const dotBuf = gl.createBuffer();
+gl.enable(gl.BLEND);
+
+let mapX, mapY, pxScale, invMap;
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  const xs = G.nodes.map(n => n.x), ys = G.nodes.map(n => n.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const m = 0.86;
+  const sx = 2 * m / (x1 - x0), sy = 2 * m / (y1 - y0);
+  const s = Math.min(sx * canvas.width, sy * canvas.height);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  mapX = x => (x - cx) * s / canvas.width;
+  mapY = y => -(y - cy) * s / canvas.height;
+  invMap = (px, py) => {
+    const clx = (px * dpr / canvas.width) * 2 - 1;
+    const cly = 1 - (py * dpr / canvas.height) * 2;
+    return { x: clx * canvas.width / s + cx, y: -cly * canvas.height / s + cy };
+  };
+  pxScale = { x: s / canvas.width, y: s / canvas.height };
+}
+addEventListener("resize", fit); fit();
+
+function drawBed() {
+  const E = G.edges, N = G.nodes;
+  const data = new Float32Array(E.length * 6 * 4);
+  let ptr = 0;
+  for (const e of E) {
+    const Dn = Math.min(e.D / 0.55, 1.4);
+    const width = Math.pow(Dn, 0.55);
+    const heat = Math.min(Dn, 1.0);
+    if (width < 0.05) continue;
+    const ax = mapX(N[e.a].x), ay = mapY(N[e.a].y);
+    const bx = mapX(N[e.b].x), by = mapY(N[e.b].y);
+    let nx = -(by - ay), ny = bx - ax;
+    const nl = Math.hypot(nx, ny) || 1;
+    const w = (0.0012 + 0.0085 * width);
+    nx = nx / nl * w * pxScale.y / pxScale.x; ny = ny / nl * w;
+    const put = (x, y, v) => { data[ptr++] = x; data[ptr++] = y; data[ptr++] = v; data[ptr++] = heat; };
+    put(ax - nx, ay - ny, -1); put(bx - nx, by - ny, -1); put(ax + nx, ay + ny, 1);
+    put(bx - nx, by - ny, -1); put(bx + nx, by + ny, 1); put(ax + nx, ay + ny, 1);
+  }
+  gl.useProgram(edgeProg);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, edgeBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, ptr), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 16, 12);
+  gl.disableVertexAttribArray(3);
+  gl.drawArrays(gl.TRIANGLES, 0, ptr / 4);
+}
+
+function drawPulses() {
+  if (!pulses.length) return;
+  const N = G.nodes;
+  const data = new Float32Array(pulses.length * 6 * 5);
+  let ptr = 0;
+  for (const p of pulses) {
+    const e = G.edges[p.edge];
+    const A = p.dir > 0 ? N[e.a] : N[e.b];
+    const B = p.dir > 0 ? N[e.b] : N[e.a];
+    const hx = A.x + (B.x - A.x) * p.t,      hy = A.y + (B.y - A.y) * p.t;
+    const t0 = Math.max(0, p.t - 0.50);
+    const tx = A.x + (B.x - A.x) * t0,       ty = A.y + (B.y - A.y) * t0;
+    const ax = mapX(tx), ay = mapY(ty), bx = mapX(hx), by = mapY(hy);
+    let nx = -(by - ay), ny = bx - ax;
+    const nl = Math.hypot(nx, ny) || 1;
+    const w = 0.0075 * (0.5 + 0.5 * p.e);
+    nx = nx / nl * w * pxScale.y / pxScale.x; ny = ny / nl * w;
+    const eTail = p.e * 0.12;
+    const put = (x, y, v, en) => { data[ptr++] = x; data[ptr++] = y; data[ptr++] = v; data[ptr++] = en; data[ptr++] = p.src; };
+    put(ax - nx, ay - ny, -1, eTail); put(bx - nx, by - ny, -1, p.e); put(ax + nx, ay + ny, 1, eTail);
+    put(bx - nx, by - ny, -1, p.e); put(bx + nx, by + ny, 1, p.e); put(ax + nx, ay + ny, 1, eTail);
+  }
+  gl.useProgram(pulseProg);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, pulseBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, ptr), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 20, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 20, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 20, 12);
+  gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 20, 16);
+  gl.drawArrays(gl.TRIANGLES, 0, ptr / 5);
+}
+
+/* territory tint + node flashes + sparks + the three landmarks.
+   Territory: every claimed node carries a faint tint of its current owner
+   — the border is drawn on the map, not just in the traffic.             */
+const TERR_A = [0.030, 0.013, 0.004];
+const TERR_B = [0.004, 0.015, 0.030];
+function drawDots() {
+  const verts = [];
+  const corners = [[-1,-1],[1,-1],[-1,1],[1,-1],[1,1],[-1,1]];
+  const R = 0.05;
+  const mk = (x, y, col, scale) => {
+    const cx = mapX(x), cy = mapY(y);
+    for (const [ux, uy] of corners)
+      verts.push(cx + ux * R * scale, cy + uy * R * scale, ux, uy, col[0], col[1], col[2]);
+  };
+  for (const n of G.nodes) {
+    if (n.owner >= 0) mk(n.x, n.y, n.owner === 1 ? TERR_B : TERR_A, 0.42);
+    if (n.flash > 0.02) {
+      const f = n.flash;
+      const col = n.owner === 1 ? [0.10 * f, 0.30 * f, 0.52 * f] : [0.5 * f, 0.28 * f, 0.10 * f];
+      mk(n.x, n.y, col, 0.5 + 0.3 * f);
+    }
+  }
+  /* organs: standing glow — the bed's memory, gold-green, neither voice's
+     hue (a chord belongs to both). weight sets brightness; conduction
+     flashes the whole membership as one body.                            */
+  for (const o of ORGANS) {
+    const g = Math.min(0.10, 0.018 * Math.log1p(o.w) * 3);
+    const fl = o.flash;
+    for (const m of o.members) {
+      const n = G.nodes[m];
+      mk(n.x, n.y, [g * 0.85 + 0.55 * fl, g + 0.62 * fl, g * 0.45 + 0.30 * fl], 0.62 + 0.5 * fl);
+    }
+  }
+  for (const s of sparks) {
+    if (s.kind === 1)      mk(s.x, s.y, [0.95 * s.life, 0.88 * s.life, 0.70 * s.life], 0.6 + 0.5 * s.life);
+    else if (s.own === 1)  mk(s.x, s.y, [0.07 * s.life, 0.17 * s.life, 0.30 * s.life], 0.45);  // drowned in B's shadow: cold
+    else if (s.own === 0)  mk(s.x, s.y, [0.30 * s.life, 0.16 * s.life, 0.07 * s.life], 0.45);  // drowned in A's shadow: warm
+    else                   mk(s.x, s.y, [0.22 * s.life, 0.23 * s.life, 0.26 * s.life], 0.45);
+  }
+  mk(G.nodes[G.srcA].x, G.nodes[G.srcA].y, [0.5, 0.26, 0.10], 1.2);   // voice A: ember home
+  mk(G.nodes[G.srcB].x, G.nodes[G.srcB].y, [0.08, 0.30, 0.52], 1.2);  // voice B: cyan home
+  mk(G.nodes[G.sink].x, G.nodes[G.sink].y, [0.16, 0.20, 0.38], 1.0);  // shared mouth
+  if (!verts.length) return;
+  const data = new Float32Array(verts);
+  gl.useProgram(dotProg);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindBuffer(gl.ARRAY_BUFFER, dotBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 28, 0);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 28, 8);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 28, 16);
+  gl.disableVertexAttribArray(3);
+  gl.drawArrays(gl.TRIANGLES, 0, data.length / 7);
+}
+
+function fade(alpha) {
+  gl.useProgram(fadeProg);
+  gl.uniform1f(u_fade, alpha);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+/* ------------------------------------------------------------------ ui -- */
+const slider = document.getElementById("gamma");
+const gammaVal = document.getElementById("gamma-val");
+const detSlider = document.getElementById("det");
+const detVal = document.getElementById("det-val");
+const regimeEl = document.getElementById("regime");
+const fpsEl = document.getElementById("fps");
+const sndEl = document.getElementById("snd");
+const volEl = document.getElementById("vol");
+volEl.addEventListener("input", () => {
+  if (AC && master) master.gain.setTargetAtTime(volGain(parseFloat(volEl.value)), AC.currentTime, 0.02);
+});
+sndEl.addEventListener("click", () => {
+  if (!AC) { ensureAudio(); return; }
+  muted = !muted;
+  sndEl.textContent = muted ? "♪ off" : "♪ on";
+});
+let gamma = parseFloat(slider.value);
+slider.addEventListener("input", () => {
+  gamma = parseFloat(slider.value);
+  gammaVal.textContent = gamma.toFixed(2);
+});
+let detune = parseFloat(detSlider.value);
+detSlider.addEventListener("input", () => {
+  detune = parseFloat(detSlider.value);
+  detVal.textContent = detune.toFixed(3);
+});
+function detuneLabel(d) {
+  if (d === 0) return "locked · the seam sings";
+  const slip = PERIOD_A * (1 + d) / d;
+  if (d < 0.06) return "drifting · slips every " + slip.toFixed(0) + "s";
+  if (d < 0.2)  return "wandering · " + slip.toFixed(0) + "s";
+  return "polyrhythm";
+}
+
+canvas.addEventListener("contextmenu", ev => ev.preventDefault());
+canvas.addEventListener("pointerdown", ev => {
+  ensureAudio();
+  const w = invMap(ev.clientX, ev.clientY);
+  let best = -1, bd = 1e9;
+  for (let i = 0; i < G.nodes.length; i++) {
+    const n = G.nodes[i];
+    const d = (n.x - w.x) ** 2 + (n.y - w.y) ** 2;
+    if (d < bd) { bd = d; best = i; }
+  }
+  if (best >= 0) {
+    /* a hand strike speaks in the voice of the half it lands on */
+    const src = G.nodes[best].x < G.nodes[G.sink].x ? 0 : 1;
+    G.nodes[best].ref = 0;
+    fireNode(best, 1.0, -1, tNow, src);
+  }
+});
+
+/* ---------------------------------------------------------------- loop -- */
+
+for (let i = 0; i < 400; i++) { solvePressure(6); adapt(gamma, 0.55); }
+
+let last = performance.now(), tNow = 0, fpsAcc = 0, fpsN = 0;
+function frame(now) {
+  const dtms = now - last; last = now;
+  const dt = Math.min(dtms / 1000, 0.05);
+  tNow += dt;
+  fpsAcc += dtms; if (++fpsN === 30) { fpsEl.textContent = (30000 / fpsAcc).toFixed(0) + " fps"; fpsAcc = 0; fpsN = 0; }
+
+  solvePressure(SWEEPS);
+  adapt(gamma, DT_CARVE);
+
+  metronomes(dt, tNow);
+  stepPulses(dt, tNow);
+  stepOrgans(dt, tNow);
+
+  fade(0.16);
+  drawBed();
+  drawPulses();
+  drawDots();
+
+  let biomass = 0; for (const o of ORGANS) biomass += o.w;
+  regimeEl.textContent = detuneLabel(detune) + " · " +
+    (ORGANS.length ? ORGANS.length + " organ" + (ORGANS.length > 1 ? "s" : "") + " · Σw " + biomass.toFixed(1) : "bare bed");
+  requestAnimationFrame(frame);
+}
+gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+gammaVal.textContent = gamma.toFixed(2);
+detVal.textContent = detune.toFixed(3);
+requestAnimationFrame(frame);
+
+/* debug hook — lets a headless verifier read the simulation state */
+window.G = G; window.pulses = pulses; window.sparks = sparks; window.STATS = STATS;
+window.ORGANS = ORGANS;
+window.setDet = d => { detune = d; detSlider.value = d; detVal.textContent = d.toFixed(3); };
+window.setGamma = g => { gamma = g; slider.value = g; gammaVal.textContent = g.toFixed(2); };
+window.state = () => {
+  let biomass = 0; for (const o of ORGANS) biomass += o.w;
+  return { t: tNow, organs: ORGANS.map(o => ({ n: o.members.length, w: +o.w.toFixed(3),
+    born: +o.born.toFixed(1), meanX: +(o.members.reduce((s, m) => s + G.nodes[m].x, 0) / o.members.length).toFixed(2) })),
+    biomass: +biomass.toFixed(2), sinkX: G.nodes[G.sink].x };
+};
+</script>
+</body>
+</html>
