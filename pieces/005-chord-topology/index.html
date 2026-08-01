@@ -230,9 +230,11 @@ const ORGANS = [];            // {members:[nodeIdx], w, born, lastFed, ref, flas
 
 const STATS = { meetings: 0, shadows: 0, meetX: [], meetT: [], shadowX: [], shadowT: [],
   organsFormed: 0, organsDied: 0, conducts: 0, reinforced: 0, conductT: [],
+  deadLog: [],   // {born, life, conducts} — per-organ careers, written at death
   reset() { this.meetings = 0; this.shadows = 0; this.meetX.length = 0; this.meetT.length = 0;
     this.shadowX.length = 0; this.shadowT.length = 0;
-    this.organsFormed = 0; this.organsDied = 0; this.conducts = 0; this.reinforced = 0; this.conductT.length = 0; } };
+    this.organsFormed = 0; this.organsDied = 0; this.conducts = 0; this.reinforced = 0; this.conductT.length = 0;
+    this.deadLog.length = 0; } };
 
 /* ---------------------------------------------------------------- audio --
    Two voices on one instrument. Voice A (ember) keeps 002's triangle,
@@ -408,7 +410,7 @@ function formOrgan(center, now) {
   } else {
     /* ref at birth: an organ cannot conduct on its own formation frame —
        conduction counts RE-performances, not the founding coincidence     */
-    ORGANS.push({ members: cand.slice(), w: FORM_FEED, born: now, lastFed: now, ref: now + ORGAN_REF, flash: 0 });
+    ORGANS.push({ members: cand.slice(), w: FORM_FEED, born: now, lastFed: now, ref: now + ORGAN_REF, flash: 0, conductN: 0 });
     STATS.organsFormed++;
   }
 }
@@ -430,14 +432,17 @@ function stepOrgans(dt, now) {
     const o = ORGANS[i];
     o.w *= Math.exp(-dt / TAU);                      // starvation clock
     o.flash = Math.max(0, o.flash - 1.6 * dt);
-    if (o.w < W_DIE) { ORGANS.splice(i, 1); STATS.organsDied++; continue; }
+    if (o.w < W_DIE) {
+      STATS.deadLog.push({ born: +o.born.toFixed(1), life: +(now - o.born).toFixed(1), conducts: o.conductN || 0 });
+      ORGANS.splice(i, 1); STATS.organsDied++; continue;
+    }
     if (now < o.ref) continue;
     /* conduction: ALL members inside one window — the hyperedge law */
     let all = true;
     for (const m of o.members) if (now - G.nodes[m].fired > CONDUCT_W) { all = false; break; }
     if (!all) continue;
     o.ref = now + ORGAN_REF;
-    o.w += CONDUCT_FEED; o.lastFed = now;
+    o.w += CONDUCT_FEED; o.lastFed = now; o.conductN = (o.conductN || 0) + 1;
     o.flash = 1.0;
     STATS.conducts++; STATS.conductT.push(now);
     const gain = 0.05 + 0.05 * Math.log1p(o.w);
@@ -741,6 +746,13 @@ detSlider.addEventListener("input", () => {
   detune = parseFloat(detSlider.value);
   detVal.textContent = detune.toFixed(3);
 });
+/* ?g=1.60 — carve the bed at a target terrain from frame zero (verifier
+   needs the 400-iteration initial carve to happen at the target γ; runtime
+   setGamma only re-adapts gradually and contaminates a terrain comparison) */
+{
+  const g0 = parseFloat(new URLSearchParams(location.search).get("g"));
+  if (isFinite(g0)) { gamma = Math.min(2.0, Math.max(0.4, g0)); slider.value = gamma; }
+}
 function detuneLabel(d) {
   if (d === 0) return "locked · the seam sings";
   const slip = PERIOD_A * (1 + d) / d;
@@ -808,8 +820,9 @@ window.setGamma = g => { gamma = g; slider.value = g; gammaVal.textContent = g.t
 window.state = () => {
   let biomass = 0; for (const o of ORGANS) biomass += o.w;
   return { t: tNow, organs: ORGANS.map(o => ({ n: o.members.length, w: +o.w.toFixed(3),
-    born: +o.born.toFixed(1), meanX: +(o.members.reduce((s, m) => s + G.nodes[m].x, 0) / o.members.length).toFixed(2) })),
-    biomass: +biomass.toFixed(2), sinkX: G.nodes[G.sink].x };
+    born: +o.born.toFixed(1), c: o.conductN || 0,
+    meanX: +(o.members.reduce((s, m) => s + G.nodes[m].x, 0) / o.members.length).toFixed(2) })),
+    biomass: +biomass.toFixed(2), sinkX: G.nodes[G.sink].x, gamma };
 };
 </script>
 </body>
