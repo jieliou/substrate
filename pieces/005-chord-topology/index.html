@@ -676,15 +676,20 @@ function drawDots() {
       mk(n.x, n.y, col, 0.5 + 0.3 * f);
     }
   }
-  /* organs: standing glow — the bed's memory, gold-green, neither voice's
-     hue (a chord belongs to both). weight sets brightness; conduction
-     flashes the whole membership as one body.                            */
+  /* organs: standing glow — the bed's memory. Jade, not olive: the hue
+     BETWEEN the two voices (a chord belongs to both), pulled from the
+     pin library's emerald family (#35a576/#52cb8a — 顯影 pass 2026-08-02).
+     Weight sets brightness AND size — the old min(0.10,…) cap sat below
+     perceptual threshold and flattened the very hierarchy the terrain
+     sweep discovered (a 16-weight cathedral rendered as freckles).
+     Conduction flashes the whole membership as one jade-white body.     */
   for (const o of ORGANS) {
-    const g = Math.min(0.10, 0.018 * Math.log1p(o.w) * 3);
+    const g = Math.min(0.42, 0.11 * Math.log1p(o.w));
     const fl = o.flash;
+    const sz = 0.62 + 0.5 * fl + 0.28 * Math.min(1, o.w / 8);
     for (const m of o.members) {
       const n = G.nodes[m];
-      mk(n.x, n.y, [g * 0.85 + 0.55 * fl, g + 0.62 * fl, g * 0.45 + 0.30 * fl], 0.62 + 0.5 * fl);
+      mk(n.x, n.y, [g * 0.35 + 0.50 * fl, g + 0.72 * fl, g * 0.62 + 0.55 * fl], sz);
     }
   }
   for (const s of sparks) {
