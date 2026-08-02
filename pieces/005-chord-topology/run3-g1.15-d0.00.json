@@ -1,0 +1,34 @@
+{
+ "gamma": 1.15,
+ "det": 0.0,
+ "meetings": 13,
+ "formed": 3,
+ "reinforced": 7,
+ "conducts": 59,
+ "died": 1,
+ "biomass": 16.28,
+ "organs": [
+  {
+   "n": 4,
+   "w": 9.279,
+   "born": 11.3,
+   "c": 41,
+   "meanX": 14
+  },
+  {
+   "n": 3,
+   "w": 7.006,
+   "born": 16.8,
+   "c": 18,
+   "meanX": 18.05
+  }
+ ],
+ "deadLog": [
+  {
+   "born": 11.9,
+   "life": 30.1,
+   "conducts": 0
+  }
+ ],
+ "fps": 120
+}
