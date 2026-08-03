@@ -203,6 +203,62 @@ const MAX_PULSES = 900;
 const pulses = [];            // {edge, dir, t, e, src}
 const sparks = [];            // {x, y, life, kind}  kind: 1 meeting / 0 shadow death
 
+/* ---------------------------------------------------- travelling spring --
+   顯影 pass 2026-08-04. measure3 found the law (slip is irrigation: the
+   re-alignment point sweeps the terrain and waters channels the lock
+   never reaches) but the renderer has no word for WATER — meetings flash
+   and vanish, organs glow where memory already sits; nothing shows the
+   moving source that feeds them. The spring: recency-weighted centroid
+   of the last SPRING_WIN of meetings, drawn as ice-water — neither
+   voice's hue, not the organs' jade; water is nobody's territory.
+   HONESTY GATE: strength = density × LOCALIZATION. When coincidence is
+   everywhere (lock on mesh — P2's "ubiquity dilutes"), there is no
+   spring, only rain: the marker must go dark rather than average
+   scattered meetings into a fiction. The trail (TRAIL_LIFE ≈ organ τ)
+   records where the water has walked — irrigation made visible on the
+   same clock as the memory it feeds.
+   Acceptance, written before the code ran:
+     A1 walk       γ=1.0  Δ=0.10 — spring translates; trail spans ≥2 units.
+     A2a rain      γ=1.0  Δ=0    — ubiquity: spring dark most of the run.
+     A2b well      γ=1.15 Δ=0    — pinpoint meetings: a STANDING spring
+                                   near the junction (x≈16), trail ≈ point.
+     A3 irrigation γ=1.15 Δ=0.10 — spring walks, jade lights in its wake.
+     A4 zero console errors, fps steady.                                  */
+const SPRING_WIN  = 6.0;   // s — how much recent water defines the spring
+const SPRING_LOC  = 3.0;   // units — beyond this spread it's rain, not a spring
+const TRAIL_LIFE  = 24.0;  // s ≈ organ τ — wake lives on the memory's clock
+const TRAIL_EVERY = 0.8;   // s — sampling cadence of the wake
+const springMeets = [];    // {x, y, t}
+const springTrail = [];    // {x, y, t}
+const spring = { x: 0, y: 0, s: 0 };   // s = strength after the honesty gate
+let trailLast = -1e9;
+
+function stepSpring(now) {
+  while (springMeets.length && now - springMeets[0].t > SPRING_WIN) springMeets.shift();
+  while (springTrail.length && now - springTrail[0].t > TRAIL_LIFE) springTrail.shift();
+  if (springMeets.length < 2) { spring.s *= 0.94; return; }
+  let W = 0, cx = 0, cy = 0;
+  for (const m of springMeets) {
+    const w = 1 - (now - m.t) / SPRING_WIN;
+    W += w; cx += w * m.x; cy += w * m.y;
+  }
+  cx /= W; cy /= W;
+  let vr = 0;
+  for (const m of springMeets) {
+    const w = 1 - (now - m.t) / SPRING_WIN;
+    vr += w * ((m.x - cx) ** 2 + (m.y - cy) ** 2);
+  }
+  const spread = Math.sqrt(vr / W);
+  const density = Math.min(1, springMeets.length / 5);
+  const local = Math.max(0, 1 - spread / SPRING_LOC);
+  spring.x = cx; spring.y = cy;
+  spring.s = density * local;
+  if (spring.s > 0.15 && now - trailLast > TRAIL_EVERY) {
+    springTrail.push({ x: cx, y: cy, t: now });
+    trailLast = now;
+  }
+}
+
 /* ---------------------------------------------------------------- organs --
    The one new rule. On a meeting, gather every node that fired within
    FORM_W of now AND sits within R_LOC of the meeting point, both voices
@@ -302,6 +358,7 @@ function fireNode(i, energy, fromEdge, now, src) {
         n.flash = Math.min(1.3, n.flash + 0.7);
         sparks.push({ x: n.x, y: n.y, life: 1.0, kind: 1 });
         STATS.meetings++; STATS.meetX.push(n.x); STATS.meetT.push(now);
+        springMeets.push({ x: n.x, y: n.y, t: now });
         if (fromEdge >= 0 && energy >= E_SOUND * 0.7) {
           const f = noteForEdge(G.edges[fromEdge], src);
           pluck(f, 0.06 + 0.18 * energy, 0.5 + 0.5 * energy, VOICE_WAVE[src]);
@@ -676,6 +733,19 @@ function drawDots() {
       mk(n.x, n.y, col, 0.5 + 0.3 * f);
     }
   }
+  /* the water: wake first (dim trace of where the spring has walked),
+     then the spring itself — mist halo + ice-water core. Ice, not cyan:
+     B's home is saturated blue, the meeting spark is warm white, jade is
+     memory — the spring is the SOURCE, colder and paler than all three. */
+  for (const p of springTrail) {
+    const l = 1 - (tNow - p.t) / TRAIL_LIFE;
+    mk(p.x, p.y, [0.09 * l, 0.155 * l, 0.175 * l], 0.42);
+  }
+  if (spring.s > 0.02) {
+    const s = spring.s;
+    mk(spring.x, spring.y, [0.09 * s, 0.16 * s, 0.19 * s], 1.9);
+    mk(spring.x, spring.y, [0.36 * s, 0.58 * s, 0.66 * s], 0.80 + 0.40 * s);
+  }
   /* organs: standing glow — the bed's memory. Jade, not olive: the hue
      BETWEEN the two voices (a chord belongs to both), pulled from the
      pin library's emerald family (#35a576/#52cb8a — 顯影 pass 2026-08-02).
@@ -757,6 +827,8 @@ detSlider.addEventListener("input", () => {
 {
   const g0 = parseFloat(new URLSearchParams(location.search).get("g"));
   if (isFinite(g0)) { gamma = Math.min(2.0, Math.max(0.4, g0)); slider.value = gamma; }
+  const d0 = parseFloat(new URLSearchParams(location.search).get("d"));
+  if (isFinite(d0)) { detune = Math.min(0.5, Math.max(0, d0)); detSlider.value = detune; }
 }
 function detuneLabel(d) {
   if (d === 0) return "locked · the seam sings";
@@ -801,6 +873,7 @@ function frame(now) {
   metronomes(dt, tNow);
   stepPulses(dt, tNow);
   stepOrgans(dt, tNow);
+  stepSpring(tNow);
 
   fade(0.16);
   drawBed();
@@ -820,6 +893,7 @@ requestAnimationFrame(frame);
 /* debug hook — lets a headless verifier read the simulation state */
 window.G = G; window.pulses = pulses; window.sparks = sparks; window.STATS = STATS;
 window.ORGANS = ORGANS;
+window.spring = spring; window.springTrail = springTrail;
 window.setDet = d => { detune = d; detSlider.value = d; detVal.textContent = d.toFixed(3); };
 window.setGamma = g => { gamma = g; slider.value = g; gammaVal.textContent = g.toFixed(2); };
 window.state = () => {
