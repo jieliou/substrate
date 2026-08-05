@@ -43,6 +43,7 @@
   #hud .k { color: #545b63; }
   #gamma-val, #det-val { color: #cdd6df; min-width: 4.5ch; display: inline-block; }
   #regime { color: #6d7680; min-width: 18ch; }
+  #terr-bar { width: 64px; height: 5px; align-self: center; flex: none; background: #16191c; }
   input[type=range] {
     -webkit-appearance: none; appearance: none;
     flex: 1; max-width: 260px; height: 1px; background: #2a2f34; outline: none;
@@ -78,6 +79,7 @@
   <span class="k">Δ</span><span id="det-val">0.000</span>
   <input id="det" type="range" min="0" max="0.5" step="0.005" value="0">
   <span id="regime"></span>
+  <span id="terr-bar" title="homeland census"></span>
   <span class="k" id="snd" style="cursor:pointer">♪ asleep</span>
   <input id="vol" type="range" min="0" max="1" step="0.01" value="0.65" style="flex:none; width:84px">
   <span class="k" id="fps"></span>
@@ -109,7 +111,7 @@ function buildGraph(seed) {
       const x = c + (r % 2 ? 0.5 : 0) + (rnd() - 0.5) * JITTER;
       const y = r * 0.866 + (rnd() - 0.5) * JITTER;
       index[r].push(nodes.length);
-      nodes.push({ x, y, p: 0, inj: 0, ref: 0, flash: 0, owner: -1, fired: -1e9 });
+      nodes.push({ x, y, p: 0, inj: 0, ref: 0, flash: 0, owner: -1, fired: -1e9, terr: 0 });
     }
   }
   const edges = [];
@@ -380,6 +382,11 @@ function fireNode(i, energy, fromEdge, now, src) {
   n.ref = now + REFRACTORY;
   n.fired = now;
   n.owner = src;
+  /* homeland: the SLOW ledger of control. Each claim nudges the node a
+     step toward its striker; the fast border (owner) flips per strike,
+     the homeland (terr) takes ~10 strikes to convert. Display-only —
+     no dynamics branch ever reads terr.                                 */
+  n.terr += ((src === 1 ? 1 : -1) - n.terr) * TERR_GAIN;
   n.flash = Math.min(1, energy + 0.25);
   if (i === G.sink) {
     pluck(82.4, 0.30, 1.2, "sine");                 // the note lands: deep accent (E2)
@@ -422,7 +429,8 @@ function stepPulses(dt, now) {
       if (arrive === G.sink) G.nodes[G.sink].flash = 1.4;
     }
   }
-  for (const n of G.nodes) n.flash = Math.max(0, n.flash - 2.2 * dt);
+  const tk = Math.exp(-dt / TERR_TAU);       /* abandoned land slowly forgets its lord */
+  for (const n of G.nodes) { n.flash = Math.max(0, n.flash - 2.2 * dt); n.terr *= tk; }
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
     s.life -= (s.kind ? 2.0 : 3.0) * dt;
@@ -712,10 +720,21 @@ function drawPulses() {
 }
 
 /* territory tint + node flashes + sparks + the three landmarks.
-   Territory: every claimed node carries a faint tint of its current owner
-   — the border is drawn on the map, not just in the traffic.             */
+   Invasion pass (2026-08-06): the old tint showed the FAST border — owner
+   flips on every strike, and at 0.030 max it sat below the perceptual
+   threshold anyway (the same flattening the organ glow had before 08-02).
+   measure4 found the piece's slowest story: regime change is a relocation
+   of the capital, and the ridge state is A holding 80% of the field —
+   but that variable lived only in the verifier. Now the map itself keeps
+   the slow ledger: each node's terr is an EMA of who claims it (~10
+   strikes to convert, τ=90s relaxation — no traffic, no claim: the same
+   honest gate as the spring). Brightness carries CONFIDENCE, so the
+   frontier draws itself as a dark seam where the two washes cancel —
+   contested ground is dim because it IS uncertain, and an invasion is
+   the seam walking while one wash floods. The HUD bar is the census.   */
 const TERR_A = [0.030, 0.013, 0.004];
 const TERR_B = [0.004, 0.015, 0.030];
+const TERR_GAIN = 0.12, TERR_TAU = 90;
 function drawDots() {
   const verts = [];
   const corners = [[-1,-1],[1,-1],[-1,1],[1,-1],[1,1],[-1,1]];
@@ -726,7 +745,12 @@ function drawDots() {
       verts.push(cx + ux * R * scale, cy + uy * R * scale, ux, uy, col[0], col[1], col[2]);
   };
   for (const n of G.nodes) {
-    if (n.owner >= 0) mk(n.x, n.y, n.owner === 1 ? TERR_B : TERR_A, 0.42);
+    const ta = Math.abs(n.terr);
+    if (ta > 0.02) {
+      const base = n.terr > 0 ? TERR_B : TERR_A;
+      const s = ta * 2.6;
+      mk(n.x, n.y, [base[0] * s, base[1] * s, base[2] * s], 0.34 + 0.30 * ta);
+    }
     if (n.flash > 0.02) {
       const f = n.flash;
       const col = n.owner === 1 ? [0.10 * f, 0.30 * f, 0.52 * f] : [0.5 * f, 0.28 * f, 0.10 * f];
@@ -800,6 +824,7 @@ const gammaVal = document.getElementById("gamma-val");
 const detSlider = document.getElementById("det");
 const detVal = document.getElementById("det-val");
 const regimeEl = document.getElementById("regime");
+const terrBar = document.getElementById("terr-bar");
 const fpsEl = document.getElementById("fps");
 const sndEl = document.getElementById("snd");
 const volEl = document.getElementById("vol");
@@ -865,7 +890,21 @@ function frame(now) {
   const dtms = now - last; last = now;
   const dt = Math.min(dtms / 1000, 0.05);
   tNow += dt;
-  fpsAcc += dtms; if (++fpsN === 30) { fpsEl.textContent = (30000 / fpsAcc).toFixed(0) + " fps"; fpsAcc = 0; fpsN = 0; }
+  fpsAcc += dtms; if (++fpsN === 30) {
+    fpsEl.textContent = (30000 / fpsAcc).toFixed(0) + " fps"; fpsAcc = 0; fpsN = 0;
+    /* homeland census — the HUD bar. Confident nodes only (|terr|>0.15):
+       the bar reports settled land, not every skirmish.                  */
+    let nA = 0, nB = 0;
+    for (const n of G.nodes) { if (n.terr < -0.15) nA++; else if (n.terr > 0.15) nB++; }
+    if (nA + nB > 0) {
+      const pA = Math.round(100 * nA / (nA + nB));
+      terrBar.style.background = `linear-gradient(90deg, #6b3a16 0%, #6b3a16 ${pA}%, #12405e ${pA}%, #12405e 100%)`;
+      terrBar.title = `homeland census — A ${pA}% / B ${100 - pA}%`;
+    } else {
+      terrBar.style.background = "#16191c";
+      terrBar.title = "homeland census — unclaimed";
+    }
+  }
 
   solvePressure(SWEEPS);
   adapt(gamma, DT_CARVE);
@@ -898,10 +937,13 @@ window.setDet = d => { detune = d; detSlider.value = d; detVal.textContent = d.t
 window.setGamma = g => { gamma = g; slider.value = g; gammaVal.textContent = g.toFixed(2); };
 window.state = () => {
   let biomass = 0; for (const o of ORGANS) biomass += o.w;
+  let tA = 0, tB = 0;
+  for (const n of G.nodes) { if (n.terr < -0.15) tA++; else if (n.terr > 0.15) tB++; }
   return { t: tNow, organs: ORGANS.map(o => ({ n: o.members.length, w: +o.w.toFixed(3),
     born: +o.born.toFixed(1), c: o.conductN || 0,
     meanX: +(o.members.reduce((s, m) => s + G.nodes[m].x, 0) / o.members.length).toFixed(2) })),
-    biomass: +biomass.toFixed(2), sinkX: G.nodes[G.sink].x, gamma };
+    biomass: +biomass.toFixed(2), sinkX: G.nodes[G.sink].x, gamma,
+    terr: { A: tA, B: tB, shareA: tA + tB ? +(tA / (tA + tB)).toFixed(3) : null } };
 };
 </script>
 </body>

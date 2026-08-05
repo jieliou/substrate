@@ -1,0 +1,50 @@
+{
+ "baseline": {
+  "shareA": 0.56,
+  "A": 93,
+  "B": 73,
+  "frontierX": 11.5,
+  "contested": 0.036,
+  "bMeanX": 17.88,
+  "srcBx": 23.168422220563517,
+  "sinkX": 12.141316273994743,
+  "meetings": 29,
+  "conducts": 14,
+  "biomass": 9.78,
+  "fps": 120,
+  "errors": [],
+  "bar": "homeland census \u2014 A 56% / B 44%"
+ },
+ "ridge": {
+  "shareA": 0.788,
+  "A": 78,
+  "B": 21,
+  "frontierX": 17.5,
+  "contested": 0.01,
+  "bMeanX": 20.06,
+  "srcBx": 23.168422220563517,
+  "sinkX": 12.141316273994743,
+  "meetings": 9,
+  "conducts": 51,
+  "biomass": 13.8,
+  "fps": 120,
+  "errors": [],
+  "bar": "homeland census \u2014 A 79% / B 21%"
+ },
+ "mesh": {
+  "shareA": 0.491,
+  "A": 187,
+  "B": 194,
+  "frontierX": 11.5,
+  "contested": 0.086,
+  "bMeanX": 17.77,
+  "srcBx": 23.168422220563517,
+  "sinkX": 12.141316273994743,
+  "meetings": 68,
+  "conducts": 23,
+  "biomass": 29.55,
+  "fps": 120,
+  "errors": [],
+  "bar": "homeland census \u2014 A 49% / B 51%"
+ }
+}
