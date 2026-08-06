@@ -31,7 +31,26 @@
        P4 conduction is rarer than meeting — the full-member window is
           stricter than a pairwise coincide: conducts/meetings < 0.5.
           If ≈1, the organ is only echoing meetings (locality too narrow —
-          that itself would be the finding).                              */
+          that itself would be the finding).
+
+     PERCUSSION PASS (2026-08-07, prompted by Jie's studio visit 08-06:
+     "rhythmic drums would make it more watchable"). No sequencer is
+     added — the event stream IS the drummer: sink arrival = kick,
+     shadow death = dry hat tick, meeting keeps its chord (the accent).
+     Artistic amendment, recorded honestly: the old rule "a shadow death
+     plays nothing — the border is audible as where the music stops" is
+     narrowed to the MELODIC layer. Melody still dies at the border; the
+     corpse now clicks. Pitched vs unpitched carries the same distinction
+     the silence used to.
+     PREDICTIONS (written before first run, craft rule 8):
+       PD1 groove from regime — locked ridge (g=1.15 d=0): kick
+           inter-onset CV < 0.35 (near-isochronous pulse; standing beats
+           deliver the sink periodically). Slip (g=1.0 d=0.10): CV > 0.6
+           (broken beat; kicks cluster with the meeting-phrase structure).
+       PD2 hat density tracks border contact — hats/min: mesh (g=0.6)
+           highest, ridge (g=1.15) lowest, slip baseline between.
+       PD3 zero JS errors, fps unchanged; percussion has its own voice
+           cap so hats can never starve the melodic voices.               */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
@@ -72,7 +91,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="title"><b>005 — chords as topology</b><br>the bed remembers its chords. where the two voices arrive in step, the co-active nodes crystallize into an organ — it sounds only as a whole, feeds on repetition, starves when the seam moves on. click to strike — sound wakes on first touch.</div>
+<div id="title"><b>005 — chords as topology</b><br>the bed remembers its chords. where the two voices arrive in step, the co-active nodes crystallize into an organ — it sounds only as a whole, feeds on repetition, starves when the seam moves on. click to strike — sound wakes on first touch. the traffic is the drummer: arrivals kick, shadow deaths tick.</div>
 <div id="hud">
   <span class="k">γ</span><span id="gamma-val">1.00</span>
   <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
@@ -286,10 +305,10 @@ const W_DIE = 0.30;           // below this the organ dies
 const ORGAN_REF = 0.6;        // s — organ refractory after conducting
 const ORGANS = [];            // {members:[nodeIdx], w, born, lastFed, ref, flash}
 
-const STATS = { meetings: 0, shadows: 0, meetX: [], meetT: [], shadowX: [], shadowT: [],
+const STATS = { meetings: 0, shadows: 0, kicks: 0, hats: 0, kickT: [], meetX: [], meetT: [], shadowX: [], shadowT: [],
   organsFormed: 0, organsDied: 0, conducts: 0, reinforced: 0, conductT: [],
   deadLog: [],   // {born, life, conducts} — per-organ careers, written at death
-  reset() { this.meetings = 0; this.shadows = 0; this.meetX.length = 0; this.meetT.length = 0;
+  reset() { this.meetings = 0; this.shadows = 0; this.kicks = 0; this.hats = 0; this.kickT.length = 0; this.meetX.length = 0; this.meetT.length = 0;
     this.shadowX.length = 0; this.shadowT.length = 0;
     this.organsFormed = 0; this.organsDied = 0; this.conducts = 0; this.reinforced = 0; this.conductT.length = 0;
     this.deadLog.length = 0; } };
@@ -302,7 +321,9 @@ const STATS = { meetings: 0, shadows: 0, meetX: [], meetT: [], shadowX: [], shad
    dyad: the edge's note plus its fifth. A shadow death plays nothing —
    the border is audible as the place where the music stops.             */
 
-let AC = null, master = null, delaySend = null;
+let AC = null, master = null, delaySend = null, noiseBuf = null;
+let percVoices = 0;
+const PERC_CAP = 8;
 let muted = false, voices = 0;
 const VOICE_CAP = 12;
 const E_SOUND = 0.15;
@@ -324,6 +345,10 @@ function ensureAudio() {
   delaySend = AC.createGain();
   delaySend.connect(delay); delay.connect(fb); fb.connect(delay);
   delay.connect(wet); wet.connect(master);
+  /* percussion noise source — one shared buffer, built once */
+  noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.1, AC.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
   sndEl.textContent = "♪ on";
 }
 
@@ -339,6 +364,40 @@ function pluck(freq, gain, dur, type) {
   o.connect(g); g.connect(master); g.connect(delaySend);
   o.start(t); o.stop(t + dur + 0.05);
   o.onended = () => { voices--; };
+}
+
+/* ------------------------------------------------------------ percussion --
+   The traffic is the drummer. Dry (no delay send): rhythm reads as floor,
+   melody keeps the room. Separate cap — hats can never starve the plucks. */
+function kick(energy) {
+  if (!AC || muted || percVoices >= PERC_CAP) return;
+  percVoices++;
+  const t = AC.currentTime;
+  const o = AC.createOscillator(); o.type = "sine";
+  o.frequency.setValueAtTime(110, t);
+  o.frequency.exponentialRampToValueAtTime(42, t + 0.13);
+  const g = AC.createGain();
+  const peak = 0.16 + 0.14 * Math.min(1, energy);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0008, t + 0.16);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + 0.2);
+  o.onended = () => { percVoices--; };
+}
+
+function hat() {
+  if (!AC || muted || percVoices >= PERC_CAP || !noiseBuf) return;
+  percVoices++;
+  const t = AC.currentTime;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const hp = AC.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 6500;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.055, t);
+  g.gain.exponentialRampToValueAtTime(0.0006, t + 0.028);
+  s.connect(hp); hp.connect(g); g.connect(master);
+  s.start(t); s.stop(t + 0.05);
+  s.onended = () => { percVoices--; };
 }
 
 /* voice A from A2, voice B a fifth up from E3; both pentatonic */
@@ -375,6 +434,7 @@ function fireNode(i, energy, fromEdge, now, src) {
            walking fault line becomes legible without a single note.         */
         sparks.push({ x: n.x, y: n.y, life: 0.7, kind: 0, own: n.owner });
         STATS.shadows++; STATS.shadowX.push(n.x); STATS.shadowT.push(now);
+        STATS.hats++; hat();                         /* the corpse clicks — dry, unpitched */
       }
     }
     return;
@@ -389,7 +449,9 @@ function fireNode(i, energy, fromEdge, now, src) {
   n.terr += ((src === 1 ? 1 : -1) - n.terr) * TERR_GAIN;
   n.flash = Math.min(1, energy + 0.25);
   if (i === G.sink) {
-    pluck(82.4, 0.30, 1.2, "sine");                 // the note lands: deep accent (E2)
+    STATS.kicks++; STATS.kickT.push(now);
+    kick(energy);                                    // the floor: traffic's own downbeat
+    pluck(82.4, 0.26, 1.2, "sine");                 // the note lands: deep accent (E2)
   } else if (fromEdge >= 0 && energy >= E_SOUND) {
     pluck(noteForEdge(G.edges[fromEdge], src), 0.05 + 0.20 * energy, 0.35 + 0.5 * energy, VOICE_WAVE[src]);
   } else if (fromEdge < 0) {
