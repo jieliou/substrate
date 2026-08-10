@@ -50,7 +50,35 @@
        PD2 hat density tracks border contact — hats/min: mesh (g=0.6)
            highest, ridge (g=1.15) lowest, slip baseline between.
        PD3 zero JS errors, fps unchanged; percussion has its own voice
-           cap so hats can never starve the melodic voices.               */
+           cap so hats can never starve the melodic voices.
+
+     GHOST-HALF PASS (2026-08-10). measure6 found half the instrument has
+     never been played: beat order k>=0 confines the slip spring to the
+     phi>0 EAST half of the lag field; the west dwell segments (x ~ 5.0 /
+     6.4 / 7.9) are reachable only at negative detune — a knob that until
+     today did not exist. This pass builds the knob (slider min -0.5;
+     B runs FASTER than A) and turns it once, headless.
+     PREDICTIONS (written before first run, craft rule 8):
+       P17 ghost activation — g=1.15 d=-0.10: the spring walks WEST;
+           meeting x-mean lands west of the sink (vs east at d=+0.10),
+           and >=1 dwell segment (>=3 consecutive meetings within 1.2
+           units) falls inside the ghost bracket x in [4.5, 8.4].
+       P18 asymmetric slip — the mirror is not exact: slip period
+           2.4(1+d)/|d| gives 21.6 s at d=-0.10 vs 26.4 s at +0.10, so
+           the ghost run should log ~1.2x the meetings of the east
+           control in the same 60 s (count, not vibe).
+       P19 same physics, no new rules — zero JS errors; kick/hat
+           percussion unchanged in kind; organs (if any form in 60 s)
+           sit at meeting clusters exactly as in the east.
+     VERDICT (run7-ghost.json, recorded honestly): P17 DEAD both halves —
+     meeting x-mean 15.19 vs sink 12.14, indistinguishable from the east
+     control (14.83); 2/37 meetings west of sink, one early touch at
+     x=8.1 inside the ghost bracket, no dwell, no westward drift. P18
+     PASS (1.37x, clock physics correct). P19 PASS. What the death
+     teaches: the east bias survives sign reversal — geography is set by
+     bed + refractory TERRITORY dynamics, not by the clock. The analytic
+     twin knows distances; it does not know territory. The ghost dwells
+     are real in the T-field and locked by ownership, not by beat order. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
@@ -96,7 +124,7 @@
   <span class="k">γ</span><span id="gamma-val">1.00</span>
   <input id="gamma" type="range" min="0.40" max="2.00" step="0.01" value="1.00">
   <span class="k">Δ</span><span id="det-val">0.000</span>
-  <input id="det" type="range" min="0" max="0.5" step="0.005" value="0">
+  <input id="det" type="range" min="-0.5" max="0.5" step="0.005" value="0">
   <span id="regime"></span>
   <span id="terr-bar" title="homeland census"></span>
   <span class="k" id="snd" style="cursor:pointer">♪ asleep</span>
@@ -915,14 +943,18 @@ detSlider.addEventListener("input", () => {
   const g0 = parseFloat(new URLSearchParams(location.search).get("g"));
   if (isFinite(g0)) { gamma = Math.min(2.0, Math.max(0.4, g0)); slider.value = gamma; }
   const d0 = parseFloat(new URLSearchParams(location.search).get("d"));
-  if (isFinite(d0)) { detune = Math.min(0.5, Math.max(0, d0)); detSlider.value = detune; }
+  if (isFinite(d0)) { detune = Math.min(0.5, Math.max(-0.5, d0)); detSlider.value = detune; }
 }
 function detuneLabel(d) {
   if (d === 0) return "locked · the seam sings";
-  const slip = PERIOD_A * (1 + d) / d;
-  if (d < 0.06) return "drifting · slips every " + slip.toFixed(0) + "s";
-  if (d < 0.2)  return "wandering · " + slip.toFixed(0) + "s";
-  return "polyrhythm";
+  /* negative d: B runs FAST — the spring crosses into the ghost west.
+     slip period uses |d|; note the asymmetry: 2.4(1+d)/|d| is shorter
+     on the fast side (21.6s at -0.10 vs 26.4s at +0.10).               */
+  const slip = PERIOD_A * (1 + d) / Math.abs(d);
+  const side = d < 0 ? " · B leads" : "";
+  if (Math.abs(d) < 0.06) return "drifting · slips every " + slip.toFixed(0) + "s" + side;
+  if (Math.abs(d) < 0.2)  return "wandering · " + slip.toFixed(0) + "s" + side;
+  return "polyrhythm" + side;
 }
 
 canvas.addEventListener("contextmenu", ev => ev.preventDefault());
