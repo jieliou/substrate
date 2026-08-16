@@ -379,6 +379,6 @@
   headless 能做的都做完了。
 - 池中剩餘候選:
   1. ~~耦合的節拍器~~(→ 004 動工 2026-07-29,第五版近封版)
-  2. ~~和弦作為拓樸~~(→ 005 動工 2026-08-01,first light 完成)
+  2. ~~和弦作為拓樸~~(→ 005 動工 2026-08-01,進行中:十二 pass 至 08-16 — 打擊層 / 領土 / 遷都 / 回程 / soak 自反證 / biography sweep;現行定律 v3:肉的記憶 = 時間常數 + 履歷偏置。敘事見作品頁 journal + commit log)
   3. **遊走的匯**:sink 緩慢移動 →「猶豫—決定—固化」(從 003 讓位,仍在池裡)。
 - 託管:GitHub `jieliou/substrate` + substrate.jieliou.com(CF Workers static assets)。
