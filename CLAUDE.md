@@ -17,3 +17,8 @@
 
 WebGL / WebGL2,純前端,無框架無建置。`python3 -m http.server` 就能看。
 自我驗證:playwright 開頁 → 截圖 → 自己讀畫面,不靠口頭宣稱「應該會動」。
+
+## Visible-record discipline (added 2026-08-16, after Jie found the gallery stuck at 08-01)
+
+- **量測 pass 也要回寫可見紀錄**:measure-only commits 改變了作品「知道什麼」卻不改它「顯示什麼」— journal 因此靜默脫隊了六天(pass 9-12 只活在 commit message 裡)。規則:每個 pass 的 commit 必須同時把敘事寫進作品頁的 journal comment(預測 + 判決,自反證照實寫)。
+- 畫廊首頁日期用**開放區間**(`起始日 → 進行中`),封版時改成閉區間 — 單一日期會被讀成「最後活動日」。
