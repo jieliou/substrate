@@ -1,0 +1,69 @@
+{
+ "lock": {
+  "fretE": 47,
+  "fretW": 48,
+  "ghost_dwell_hits": [
+   {
+    "ghost_x": 5.0,
+    "n": 9,
+    "xs": [
+     4,
+     4.2,
+     4.5,
+     4.7,
+     5.0,
+     5.0
+    ]
+   },
+   {
+    "ghost_x": 6.4,
+    "n": 10,
+    "xs": [
+     5.5,
+     5.7,
+     6.1,
+     6.1,
+     6.1,
+     6.4
+    ]
+   },
+   {
+    "ghost_x": 7.9,
+    "n": 10,
+    "xs": [
+     6.9,
+     7.1,
+     7.2,
+     7.5,
+     7.7,
+     8.1
+    ]
+   }
+  ],
+  "errors": [],
+  "P34": "PASS"
+ },
+ "east": {
+  "fretE": 47,
+  "fretW": 48,
+  "playedE": 31,
+  "playedW": 4,
+  "meetings": 28,
+  "kicks": 44,
+  "organs": 7,
+  "errors": [],
+  "P35": "FAIL"
+ },
+ "ghost": {
+  "fretE": 47,
+  "fretW": 48,
+  "playedE": 34,
+  "playedW": 10,
+  "meetings": 32,
+  "kicks": 42,
+  "organs": 8,
+  "errors": [],
+  "P36": "FAIL"
+ },
+ "P37": "PASS"
+}
