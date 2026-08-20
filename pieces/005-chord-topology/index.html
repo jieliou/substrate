@@ -267,7 +267,74 @@
      happen", window POSITION (bed age) beats window LENGTH. Successor
      opening: can the frontier REOPEN? A mid-run perturbation (sink
      move / gamma step / topology kick) as a constitutional moment —
-     does it restart the founding era and lease the deep west? */
+     does it restart the founding era and lease the deep west?
+
+     CONSTITUTIONAL MOMENT PASS (2026-08-21, sixteenth). Law v5 says
+     the legislature adjourns at minute one. This pass asks whether it
+     can be RECONVENED. One 600 s run, three eras: g=1.15 d=-0.10 for
+     300 s (founding + adjournment, replicating the deep lease);
+     at t=300 a coup — setGamma(1.00), sixty seconds of interregnum
+     (the mesh regime, the relocation passes' other capital); at t=360
+     the restoration — setGamma(1.15) back, 240 s to observe. The
+     biography survives fret redefinition (played lives on nodes), so
+     raw played-node counts are the growth meter; score() counts stay
+     for comparability. PREDICTIONS (written before first run, craft
+     rule 8):
+       P42 the baseline replicates — phase I biography freezes by
+           t ~ 90 s (<= 2 new played nodes between t=90 and t=300);
+           west excursions (meet x < 9.5) in phase I <= 3, all in the
+           first minute.
+       P43 the interregnum carves — during 300-360 the live bed
+           actually moves: fret geometry shifts (fretE or fretW changes
+           >= 10% between t=300 and t=360) and meetings continue.
+       P44 the frontier reopens (the core question) — after the
+           restoration the biography RESUMES: >= 6 new played nodes in
+           360-600 (vs <= 2 in the frozen phase-I tail). Honest guess:
+           YES — the interregnum re-carves the bed, the restoration
+           re-fights the territorial war from a new initial condition,
+           and a SECOND founding era occurs. Sub-prediction: it also
+           re-adjourns (new bars concentrate in the first ~90 s after
+           t=360, then the per-60s growth decays back toward zero).
+       P45 the deep west still does not lease — even a second founding
+           era lights nothing in x 4.0-5.25 and min meet x stays
+           >= 5.5. (A second era is not a longer era. If this dies,
+           the frontier-opening is the find and (f) closes the other
+           way.)
+       P46 instrument — zero JS errors across the coup and the
+           restoration, fps >= 60 at end, setGamma leaves no NaN in
+           the bed (biomass finite in every poll).
+     VERDICT (run15-coup.json, recorded honestly): P42 PASS — the
+     founding replicates EXACTLY (played 54, west 8, min x 8.06: the
+     same floor as the deep lease run; the founding is deterministic).
+     P43 PASS (fret shift 70%, shareA 0.763 -> 0.500 — A's
+     supermajority dissolved to parity). P46 PASS (395 meetings,
+     84 fps, zero errors). P44 AND P45 BOTH DEAD, AND THE TWO DEATHS
+     ARE ONE FIND: the frontier did not reopen AFTER the revolution —
+     the frontier IS the revolution. During the sixty seconds of
+     interregnum the migrating boundary swept west and PLAYED AS IT
+     WENT: min meet x 8.06 -> 6.07 -> 4.95 tracking shareA
+     0.76 -> 0.55 -> 0.50, thirty-four new bars in one minute (more
+     than the entire founding era), four of them in the deep band —
+     THE DEEPEST DWELL LEASED at x 4.95. The "never" that survived
+     fifteen passes died in a regime transition. Then the restoration:
+     shareA walked home 0.50 -> 0.763 over ~three minutes (the flesh
+     time constant again, law v3) and played NOTHING — zero new nodes
+     in 240 s, one lone west meeting. The return march crossed the
+     same west and stayed silent, because the outbound migration
+     traveled under MESH law (meetings promiscuous, the interregnum's
+     own constitution) while the return traveled under RIDGE law
+     (meetings confined to the seam). The revolution sings; the
+     restoration marches home in silence. Law, sixth revision: deep
+     dwells are the property of NO regime — they belong to regime
+     CHANGE itself; the confiscation ratchet releases only while the
+     law is in motion, and only under a promiscuous interim law. The
+     valley between capitals (the gamma=1.10 finding) now has its
+     dynamic twin: the deep west is the ROAD between constitutions,
+     and the chord plays it only while the state migrates. Successor
+     opening (f3): the silent return — is the silence the ridge law's
+     doing or the return direction's? A slow-ramp restoration
+     (gamma 1.00 -> 1.15 over 120 s) would separate governing-law
+     from migration-speed. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
