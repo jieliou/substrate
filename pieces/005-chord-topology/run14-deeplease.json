@@ -1,0 +1,182 @@
+{
+ "regime": "g=1.15 d=-0.10",
+ "secs": 600,
+ "polls": [
+  {
+   "meetings": 11,
+   "playedW": 9,
+   "playedE": 28,
+   "minx": 8.056956962738186,
+   "t": 30
+  },
+  {
+   "meetings": 34,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 60
+  },
+  {
+   "meetings": 52,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 90
+  },
+  {
+   "meetings": 71,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 120
+  },
+  {
+   "meetings": 90,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 150
+  },
+  {
+   "meetings": 111,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 180
+  },
+  {
+   "meetings": 132,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 210
+  },
+  {
+   "meetings": 149,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 240
+  },
+  {
+   "meetings": 169,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 270
+  },
+  {
+   "meetings": 189,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 300
+  },
+  {
+   "meetings": 210,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 330
+  },
+  {
+   "meetings": 227,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 360
+  },
+  {
+   "meetings": 251,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 390
+  },
+  {
+   "meetings": 269,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 420
+  },
+  {
+   "meetings": 291,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 450
+  },
+  {
+   "meetings": 308,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 480
+  },
+  {
+   "meetings": 329,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 510
+  },
+  {
+   "meetings": 352,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 540
+  },
+  {
+   "meetings": 370,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 570
+  },
+  {
+   "meetings": 394,
+   "playedW": 9,
+   "playedE": 34,
+   "minx": 8.056956962738186,
+   "t": 600
+  }
+ ],
+ "excursions": {
+  "n": 1,
+  "minx": 8.056956962738186,
+  "records": [
+   {
+    "t": 3.1,
+    "x": 8.06
+   }
+  ],
+  "rec_limit": 2.0,
+  "first_third_records": 0
+ },
+ "deep_band": {
+  "played": 0,
+  "frets": []
+ },
+ "depth": {
+  "d300": 2.54,
+  "d600": 2.54,
+  "ratio": 1.0
+ },
+ "totals": {
+  "meetings": 394,
+  "kicks": 493,
+  "organs": 13,
+  "playedW": 9,
+  "playedE": 34,
+  "fretW": 48,
+  "fretE": 47,
+  "fps": 89
+ },
+ "errors": [],
+ "P38": "FAIL",
+ "P39": "PASS",
+ "P40": "PASS",
+ "P41": "PASS"
+}
