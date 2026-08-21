@@ -334,7 +334,98 @@
      opening (f3): the silent return — is the silence the ridge law's
      doing or the return direction's? A slow-ramp restoration
      (gamma 1.00 -> 1.15 over 120 s) would separate governing-law
-     from migration-speed. */
+     from migration-speed.
+
+     SLOW RESTORATION PASS (2026-08-22, seventeenth). The sixteenth
+     pass left law v6 with a confound it cannot see: the singing
+     outbound migration traveled under MESH law AND westward; the
+     silent return traveled under RIDGE law AND eastward. Law and
+     direction changed together. This pass makes the return journey
+     happen under the mesh's own constitution: one 600 s run —
+     founding g=1.15 d=-0.10 for 300 s, coup setGamma(1.00) at t=300
+     (sixty seconds, identical to pass sixteen: internal control),
+     then a SLOW restoration: gamma ramped linearly 1.00 -> 1.15
+     over 120 s (t=360-480, one setGamma step per 5 s), then 120 s
+     of settled ridge (480-600). If the early ramp — law still
+     mesh-ish, frontier marching home east — SINGS, the law governs
+     and v6's "promiscuous interim law" clause is load-bearing. If
+     the whole return stays silent, the DIRECTION governs and v6
+     must be amended (the ratchet releases only on outbound sweeps).
+     PREDICTIONS (written before first run, craft rule 8):
+       P47 three-peat determinism — the founding replicates again
+           (played ~54, west ~8, min x ~8.06 at t=300) and the coup
+           minute sings again (>= 20 new played nodes in 300-360,
+           min x <= 6.0, shareA -> ~0.50).
+       P48 the separation (core question) — LAW wins: the early
+           ramp (t 360-420, gamma < ~1.07) produces >= 6 new played
+           nodes with at least one west of x 9.5, then the late
+           ramp and settle (t 420-600) go quiet (<= 2 new).
+           Direction wins instead if the entire 360-600 adds <= 2
+           nodes. Honest guess: law — mesh meetings are promiscuous
+           wherever the seam stands, and at ramp start the seam
+           still stands deep.
+       P49 the flesh clock is law-gated — shareA lingers <= 0.60
+           until gamma crosses ~1.10 (t ~ 440), crosses 0.70 only
+           after t ~ 500, finishes 0.70-0.76. Falsifier: recovery
+           >= 0.65 before t=440 means the flesh clock runs free of
+           the law.
+       P50 instrument — zero JS errors, fps >= 60 at end, biomass
+           finite every poll, and the sampled gamma actually walks
+           the ramp (>= 3 distinct intermediate values in polls).
+     VERDICT (run16-slowramp.json, recorded honestly): P50 PASS
+     (zero errors, 89 fps, biomass finite, gamma walked). P47 HALF —
+     the founding LAW replicates (biography frozen by t=60, three
+     west excursions all in the first minute) but the SCORE does
+     not: played 61 / west 14 / min x 7.15 vs the twice-replicated
+     54 / 8 / 8.06. Seventh instrument lesson: this harness ticks
+     every 5 s where the previous two polled every 30 s — the
+     observer's metronome perturbs the realization. "The founding
+     is deterministic" was true only under the instrument that
+     measured it; the polling cadence is part of the seed. The coup
+     sings again (+25 nodes in 60 s, min x 7.15 -> 3.82 — deeper
+     than pass sixteen's 4.95). P48: LAW WINS, wider than predicted
+     — the early ramp added 12 nodes (7 west), but the singing did
+     NOT stop at gamma ~ 1.07: the far west played to gamma ~ 1.12
+     (x=2.49 at t=448, gamma 1.11; x=2.17 leased at t=409-428),
+     and the last west meeting is t=456.8 (gamma 1.121). Then the
+     LAW SETTLED and the instrument shut like a door: the settle
+     era's 79 meetings have min x 10.82 — not one crosses the sink,
+     zero new nodes in 120 s. The gate lives in (1.12, 1.15] — the
+     cathedral's own doorstep. P49 HALF, and the miss is the find:
+     shareA did not linger at parity — it kept FALLING through the
+     ramp to 0.406 at t=450, bottoming exactly at the valley
+     crossing (gamma ~ 1.11), and A's recovery began only past the
+     valley (0.503 at t=465), finishing incomplete at 0.688. THE
+     SLOW RESTORATION IS A LONGER REVOLUTION: ramping the law back
+     toward the old regime extended the open frontier instead of
+     closing it early — B overshot below parity, the deepest lease
+     in the piece's history was signed at x=2.17 (B's own hearth
+     streets), and the west half of the score is now MORE lit than
+     the east (playedW 41 vs playedE 38; measure6's ghost half-
+     instrument has been played). And the deeper verdict: the
+     question "law or direction?" DISSOLVES rather than resolves —
+     direction is not an independent variable, because the march
+     home is itself a creature of the ridge law. The flesh refused
+     to walk east while the law was permissive (mesh law arms B,
+     so A cannot re-invade); by the time the law crossed the ridge
+     threshold and ordered the march home, it had already confined
+     meetings to the seam. You cannot march home under a permissive
+     law, because HOME IS DEFINED BY THE LAW. The restoration is
+     silent by constitutional necessity, not acoustics: the only
+     law that orders the retreat also gags the frontier. Law,
+     seventh revision: the ratchet is VALUE-gated, not motion-gated
+     — deep dwells lease under any sufficiently permissive law
+     while flesh migrates, in whatever direction that law drives
+     the flesh; v6's "while the law is in motion" was an artifact
+     of instant transitions, where the interregnum was the only
+     window in which a permissive law and a moving frontier ever
+     coexisted. Successor openings: (f4) the long interregnum —
+     hold gamma=1.00 for 300 s with no restoration: does the
+     singing stop when the flesh equilibrates (testing the
+     migrating-flesh clause of v7), and how deep does a full
+     mesh era lease? (g2) the cadence observer-effect — rerun the
+     pass-sixteen protocol under 5 s ticks to separate harness
+     rhythm from protocol. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
