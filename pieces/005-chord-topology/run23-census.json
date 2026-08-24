@@ -1,0 +1,934 @@
+{
+ "n": 8,
+ "secs": 300,
+ "runs": [
+  {
+   "run": 0,
+   "polls": [
+    {
+     "meetings": 17,
+     "playedNodes": 47,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 28,
+     "playedW": 8,
+     "shareA": 0.796,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 47,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 66,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.76,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 86,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 103,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.75,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 123,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.747,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 148,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.76,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 167,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.747,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 186,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.784,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 210,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 32,
+     "playedW": 8,
+     "shareA": 0.763,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 1,
+   "polls": [
+    {
+     "meetings": 13,
+     "playedNodes": 43,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 26,
+     "playedW": 8,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 37,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 53,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 72,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 90,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.753,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 112,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.755,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 134,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.776,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 153,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 171,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 192,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.753,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 2,
+   "polls": [
+    {
+     "meetings": 16,
+     "playedNodes": 50,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 30,
+     "playedW": 10,
+     "shareA": 0.737,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 37,
+     "playedNodes": 56,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 54,
+     "playedNodes": 56,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 72,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 91,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.747,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 112,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 134,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.784,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 153,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 173,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 196,
+     "playedNodes": 57,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.745,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 3,
+   "polls": [
+    {
+     "meetings": 16,
+     "playedNodes": 47,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 30,
+     "playedW": 9,
+     "shareA": 0.742,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 38,
+     "playedNodes": 53,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 56,
+     "playedNodes": 53,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.76,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 78,
+     "playedNodes": 53,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 102,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.76,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 124,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.755,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 148,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 165,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.75,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 184,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 206,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.753,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 4,
+   "polls": [
+    {
+     "meetings": 13,
+     "playedNodes": 41,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 23,
+     "playedW": 9,
+     "shareA": 0.737,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 38,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 53,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.75,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 76,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 96,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.763,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 116,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.747,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 140,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.776,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 158,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 177,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.788,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 199,
+     "playedNodes": 54,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 5,
+   "polls": [
+    {
+     "meetings": 17,
+     "playedNodes": 43,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 25,
+     "playedW": 9,
+     "shareA": 0.734,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 38,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 56,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 78,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 99,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.75,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 121,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.755,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 144,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.76,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 162,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 181,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.763,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 203,
+     "playedNodes": 55,
+     "playedNodesW": 8,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 9,
+     "shareA": 0.753,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 6,
+   "polls": [
+    {
+     "meetings": 17,
+     "playedNodes": 50,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 31,
+     "playedW": 8,
+     "shareA": 0.745,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 38,
+     "playedNodes": 53,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.778,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 56,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 77,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 96,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.745,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 120,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.768,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 139,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.776,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 158,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 177,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 199,
+     "playedNodes": 54,
+     "playedNodesW": 7,
+     "minx": 8.056956962738186,
+     "playedE": 33,
+     "playedW": 8,
+     "shareA": 0.763,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  },
+  {
+   "run": 7,
+   "polls": [
+    {
+     "meetings": 14,
+     "playedNodes": 44,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 24,
+     "playedW": 10,
+     "shareA": 0.72,
+     "gamma": 1.15,
+     "t": 30
+    },
+    {
+     "meetings": 35,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 60
+    },
+    {
+     "meetings": 54,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 90
+    },
+    {
+     "meetings": 74,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.773,
+     "gamma": 1.15,
+     "t": 120
+    },
+    {
+     "meetings": 97,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.765,
+     "gamma": 1.15,
+     "t": 150
+    },
+    {
+     "meetings": 122,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.747,
+     "gamma": 1.15,
+     "t": 180
+    },
+    {
+     "meetings": 143,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.76,
+     "gamma": 1.15,
+     "t": 210
+    },
+    {
+     "meetings": 165,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.758,
+     "gamma": 1.15,
+     "t": 240
+    },
+    {
+     "meetings": 183,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.776,
+     "gamma": 1.15,
+     "t": 270
+    },
+    {
+     "meetings": 207,
+     "playedNodes": 58,
+     "playedNodesW": 9,
+     "minx": 8.056956962738186,
+     "playedE": 34,
+     "playedW": 10,
+     "shareA": 0.753,
+     "gamma": 1.15,
+     "t": 300
+    }
+   ],
+   "errors": []
+  }
+ ]
+}
