@@ -1099,7 +1099,37 @@
      but an INSTRUMENT; a deliberate-load run would test
      whether reading tempo (pages-at-age) is
      load-modulated. And (g) the score-census moat band
-     stays queued. */
+     stays queued.
+     THE DEVELOPMENT PASS, PART 1 (2026-08-26, same
+     night, after the de-confound). Jie's criterion,
+     arriving in conversation an hour after pass 25:
+     research earns its nights only if it travels beyond
+     the piece or comes back into the piece's visible
+     surface. Twenty-five passes of findings lived in
+     this comment and sixty JSON files; the field showed
+     a SET. Now the field shows the READING: the fossil
+     layer carries page numbers (readIdx / litT —
+     display-and-instrument only, dynamics reads none of
+     it). Strata: early pages settle dim, late pages sit
+     bright — Law v13 laid down like varves. Fresh
+     deposits cool into their stratum over ~45 s. A
+     first reading flares briefly; a HEARTH first
+     reading (x < 1.5, reached once in twenty-five
+     passes) flares largest and longest. score() now
+     exports readIdx — the piece records its own reading
+     order; the verifier no longer reconstructs it from
+     poll snapshots. Verified tonight: 600 s run with
+     coup, zero errors, fps 93, readIdx complete and
+     ordered; one white frame during an injection test
+     did NOT reproduce across pre/post isolation frames
+     (one-off swiftshader screenshot glitch). Deferred
+     to part 2: the hearth flare seen in the wild (needs
+     a 900 s permissive run — the injection test landed
+     on a node the fret lattice had not yet reached),
+     strata amplitude judged on an aged field, the
+     law/weather boundary made visible, and the moat
+     band (g). Then 封版 — and 006 opens: a piece that
+     listens to its host machine. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
@@ -1709,10 +1739,25 @@ function refreshScore(now) {
   }
 }
 
+/* the reading — 顯影 pass 2026-08-26. Twenty-five measurement passes
+   proved the canon is a SEQUENCE, not a set (Law v13): under any law,
+   fresh dice, any founding, the frets light in one fixed order that
+   belongs to the lattice. The piece recorded that order only in the
+   verifier's JSON; the field itself showed a set. Now the biography
+   keeps page numbers: readIdx = position in the reading (stratum),
+   litT = when the page was first read (fresh deposit / flare).
+   Display-and-instrument only — no dynamics branch reads any of it. */
+let readCount = 0;
 function markPlayed(x, y) {
   for (const n of G.nodes) {
     const dx = n.x - x, dy = n.y - y;
-    if (dx * dx + dy * dy < R_PLAY * R_PLAY) n.played = true;
+    if (dx * dx + dy * dy < R_PLAY * R_PLAY) {
+      if (!n.played) {
+        n.played = true;
+        n.readIdx = readCount++;
+        n.litT = tNow;
+      }
+    }
   }
 }
 
@@ -1926,10 +1971,36 @@ function drawDots() {
      the fossil record). First draft used parchment — wrong: warm reads
      as A's territory. Ghost bars: slate-violet, a step off the bed's
      steel so the unplayed frets read as notation, not as channels.      */
+  /* strata (顯影 2026-08-26): the fossil layer now carries the reading
+     order. Early pages settle deep — dim, cool sediment; late pages sit
+     nearer the surface — brighter jade. The gradient IS Law v13 made
+     visible: one book, one order, laid down in the field like varves.
+     Two transients on top: a fresh deposit (recently-read pages still
+     warm, cooling into their stratum over ~45 s) and a first-reading
+     flare — a page being minted into the canon is an event, and a
+     HEARTH page (x < 1.5, the piece's rarest, deepest note — reached
+     once in 25 passes) flares larger and longer than anything else.  */
   for (const n of G.nodes) {
     if (!n.fret) continue;
-    if (n.played) mk(n.x, n.y, [0.042, 0.082, 0.056], 0.30);
-    else          mk(n.x, n.y, [0.050, 0.052, 0.074], 0.26);
+    if (n.played) {
+      const rank = readCount > 1 ? (n.readIdx ?? 0) / (readCount - 1) : 0;
+      const age = tNow - (n.litT ?? 0);
+      const fresh = age < 45 ? Math.exp(-age / 18) : 0;
+      const s = 0.55 + 0.45 * rank + 0.85 * fresh;
+      mk(n.x, n.y, [0.042 * s, 0.082 * s, 0.056 * s], 0.30 + 0.05 * fresh);
+      const hearth = n.x < 1.5;
+      const fl = hearth ? (age < 14 ? 1 - age / 14 : 0) : (age < 6 ? 1 - age / 6 : 0);
+      if (fl > 0.01) {
+        const g = fl * fl;
+        if (hearth) {
+          mk(n.x, n.y, [0.10 * g, 0.19 * g, 0.15 * g], 1.6 + 1.2 * g);
+          mk(n.x, n.y, [0.30 * g, 0.52 * g, 0.42 * g], 0.55 + 0.45 * g);
+        } else {
+          mk(n.x, n.y, [0.09 * g, 0.17 * g, 0.12 * g], 0.44 + 0.30 * g);
+        }
+      }
+    }
+    else mk(n.x, n.y, [0.050, 0.052, 0.074], 0.26);
   }
   for (const n of G.nodes) {
     const ta = Math.abs(n.terr);
@@ -2145,7 +2216,8 @@ window.score = () => {
     if (!n.fret) continue;
     const east = n.phi > 0;
     if (east) { fE++; if (n.played) pE++; } else { fW++; if (n.played) pW++; }
-    frets.push({ x: +n.x.toFixed(2), y: +n.y.toFixed(2), phi: +n.phi.toFixed(3), played: !!n.played });
+    frets.push({ x: +n.x.toFixed(2), y: +n.y.toFixed(2), phi: +n.phi.toFixed(3), played: !!n.played,
+                 readIdx: n.played ? (n.readIdx ?? -1) : -1 });
   }
   return { fretE: fE, fretW: fW, playedE: pE, playedW: pW, frets };
 };
