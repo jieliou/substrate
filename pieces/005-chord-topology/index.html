@@ -1129,7 +1129,47 @@
      strata amplitude judged on an aged field, the
      law/weather boundary made visible, and the moat
      band (g). Then 封版 — and 006 opens: a piece that
-     listens to its host machine. */
+     listens to its host machine.
+     THE DEVELOPMENT PASS, PART 2 (2026-08-27). Four
+     debts, four payments. (1) The law/weather boundary:
+     pass 25 said machine state touches one thing — which
+     prologue you get. Now the piece ENACTS it: the first
+     constitutional act (first γ/Δ move, yours or a
+     verifier's) ends the founding era; pages read before
+     it keep slate paper (weather's jurisdiction),
+     pages after are jade law. Until you act, the whole
+     book is weather — which is true. (2) The moat band:
+     P35's instrument lesson reaches the HUD eleven
+     passes late. The census bar drew a line between two
+     absolutes and silently dropped contested ground;
+     now the moat is its own dark segment between the
+     homelands — dark because it IS uncertain. (3)
+     Strata amplitude, judged on the aged field as
+     promised, and the judgment found a failure: the
+     first draft's floor (s=0.55) sank page one BELOW
+     the ghost layer — a read page rendered dimmer than
+     an unread fret. Floor raised (0.75), pages sized
+     over notation; on the mesh field the reading now
+     shows as legible rows — the canon path, visible.
+     (4) The hearth flare, staged honestly: the wild
+     declined tonight (1000 s, min-x froze at 2.8455 —
+     the 10 s polling cadence is a different weather;
+     pass 16 already knew the cadence is part of the
+     seed), so a labeled injection on a true hearth
+     node (x=-0.03) on a mature field judged the
+     hierarchy: at peak the flare out-scales every
+     organ, spring, and spark in the frame, jade not
+     voice-colored, and hands over to ordinary traffic
+     as it cools. The display question — does rare READ
+     as rare — is answered yes; catching it wild stays
+     a standing pleasure, not a debt. Instrument notes:
+     swiftshader screenshots came back white ALL night
+     (N=3; part 1's "one-off" was a warning shot) —
+     canvas.toDataURL is the robust readback, and GPU
+     rendering (what a viewer actually sees) judged the
+     display at 108-113 fps; the loaded machine's 49
+     fps was the instrument's weather, not the piece's.
+     顯影 complete. Next nocturne: 封版 — and 006. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
   #hud {
@@ -1748,6 +1788,17 @@ function refreshScore(now) {
    litT = when the page was first read (fresh deposit / flare).
    Display-and-instrument only — no dynamics branch reads any of it. */
 let readCount = 0;
+/* the constitution — 顯影 part 2 (2026-08-27). Pass 25's verdict: THE
+   FOUNDING IS WEATHER, THE READING IS LAW. Machine state can touch one
+   thing only — which prologue you get; the coup erases the branch. In
+   the live piece the constitutional moment is YOURS: the first time a
+   regime knob moves (γ or Δ — slider or hook), the founding era ends.
+   Pages read before that act are the prologue — weather's jurisdiction,
+   printed on different paper. Pages after belong to the law. Until you
+   act, the founding is still open and the whole book is weather.
+   Display-and-instrument only — no dynamics branch reads constT.       */
+let constT = null;
+function constitution() { if (constT === null) constT = tNow; }
 function markPlayed(x, y) {
   for (const n of G.nodes) {
     const dx = n.x - x, dy = n.y - y;
@@ -1979,15 +2030,28 @@ function drawDots() {
      warm, cooling into their stratum over ~45 s) and a first-reading
      flare — a page being minted into the canon is an event, and a
      HEARTH page (x < 1.5, the piece's rarest, deepest note — reached
-     once in 25 passes) flares larger and longer than anything else.  */
+     once in 25 passes) flares larger and longer than anything else.
+     Part 2 (2026-08-27): the law/weather boundary. Prologue pages —
+     read before the first constitutional moment — are printed on
+     different paper: slate-blue, the weather's material (kin to the
+     ghost bars' notation). Law pages keep the jade varves. The two
+     materials share one strata gradient — one book, one order — but
+     the paper changes where the weather's jurisdiction ended.        */
   for (const n of G.nodes) {
     if (!n.fret) continue;
     if (n.played) {
+      /* amplitude floor (part 2, judged on the aged field): the first
+         draft's s floor of 0.55 sank the earliest strata BELOW the
+         ghost layer — page one rendered dimmer than an unread fret. A
+         read page never sits under notation: floor raised so the
+         deepest sediment still clears the ghosts, gradient preserved. */
       const rank = readCount > 1 ? (n.readIdx ?? 0) / (readCount - 1) : 0;
       const age = tNow - (n.litT ?? 0);
       const fresh = age < 45 ? Math.exp(-age / 18) : 0;
-      const s = 0.55 + 0.45 * rank + 0.85 * fresh;
-      mk(n.x, n.y, [0.042 * s, 0.082 * s, 0.056 * s], 0.30 + 0.05 * fresh);
+      const s = 0.75 + 0.50 * rank + 0.75 * fresh;
+      const prologue = constT === null || (n.litT ?? 0) <= constT;
+      if (prologue) mk(n.x, n.y, [0.050 * s, 0.064 * s, 0.080 * s], 0.34 + 0.05 * fresh);
+      else          mk(n.x, n.y, [0.042 * s, 0.082 * s, 0.056 * s], 0.34 + 0.05 * fresh);
       const hearth = n.x < 1.5;
       const fl = hearth ? (age < 14 ? 1 - age / 14 : 0) : (age < 6 ? 1 - age / 6 : 0);
       if (fl > 0.01) {
@@ -2098,11 +2162,13 @@ let gamma = parseFloat(slider.value);
 slider.addEventListener("input", () => {
   gamma = parseFloat(slider.value);
   gammaVal.textContent = gamma.toFixed(2);
+  constitution();
 });
 let detune = parseFloat(detSlider.value);
 detSlider.addEventListener("input", () => {
   detune = parseFloat(detSlider.value);
   detVal.textContent = detune.toFixed(3);
+  constitution();
 });
 /* ?g=1.60 — carve the bed at a target terrain from frame zero (verifier
    needs the 400-iteration initial carve to happen at the target γ; runtime
@@ -2154,14 +2220,25 @@ function frame(now) {
   tNow += dt;
   fpsAcc += dtms; if (++fpsN === 30) {
     fpsEl.textContent = (30000 / fpsAcc).toFixed(0) + " fps"; fpsAcc = 0; fpsN = 0;
-    /* homeland census — the HUD bar. Confident nodes only (|terr|>0.15):
-       the bar reports settled land, not every skirmish.                  */
-    let nA = 0, nB = 0;
-    for (const n of G.nodes) { if (n.terr < -0.15) nA++; else if (n.terr > 0.15) nB++; }
-    if (nA + nB > 0) {
-      const pA = Math.round(100 * nA / (nA + nB));
-      terrBar.style.background = `linear-gradient(90deg, #6b3a16 0%, #6b3a16 ${pA}%, #12405e ${pA}%, #12405e 100%)`;
-      terrBar.title = `homeland census — A ${pA}% / B ${100 - pA}%`;
+    /* homeland census — the HUD bar. P35's instrument lesson (score
+       pass): a boundary census needs a MOAT, not a line. The old bar
+       drew a line — confident nodes only, contested ground silently
+       dropped, the border rendered as an absolute. Part 2 (2026-08-27):
+       the moat is now its own category. Nodes with recent claims but no
+       confident owner (0.02 < |terr| <= 0.15) are the contested band,
+       drawn dark between the homelands — dark because it IS uncertain,
+       the same honesty as the field's frontier seam.                    */
+    let nA = 0, nB = 0, nM = 0;
+    for (const n of G.nodes) {
+      if (n.terr < -0.15) nA++;
+      else if (n.terr > 0.15) nB++;
+      else if (Math.abs(n.terr) > 0.02) nM++;
+    }
+    const tot = nA + nB + nM;
+    if (tot > 0) {
+      const pA = Math.round(100 * nA / tot), pM = Math.round(100 * nM / tot);
+      terrBar.style.background = `linear-gradient(90deg, #6b3a16 0%, #6b3a16 ${pA}%, #24282c ${pA}%, #24282c ${pA + pM}%, #12405e ${pA + pM}%, #12405e 100%)`;
+      terrBar.title = `homeland census — A ${pA}% / moat ${pM}% / B ${100 - pA - pM}%`;
     } else {
       terrBar.style.background = "#16191c";
       terrBar.title = "homeland census — unclaimed";
@@ -2196,17 +2273,22 @@ requestAnimationFrame(frame);
 window.G = G; window.pulses = pulses; window.sparks = sparks; window.STATS = STATS;
 window.ORGANS = ORGANS;
 window.spring = spring; window.springTrail = springTrail;
-window.setDet = d => { detune = d; detSlider.value = d; detVal.textContent = d.toFixed(3); };
-window.setGamma = g => { gamma = g; slider.value = g; gammaVal.textContent = g.toFixed(2); };
+window.setDet = d => { detune = d; detSlider.value = d; detVal.textContent = d.toFixed(3); constitution(); };
+window.setGamma = g => { gamma = g; slider.value = g; gammaVal.textContent = g.toFixed(2); constitution(); };
 window.state = () => {
   let biomass = 0; for (const o of ORGANS) biomass += o.w;
-  let tA = 0, tB = 0;
-  for (const n of G.nodes) { if (n.terr < -0.15) tA++; else if (n.terr > 0.15) tB++; }
+  let tA = 0, tB = 0, tM = 0;
+  for (const n of G.nodes) {
+    if (n.terr < -0.15) tA++;
+    else if (n.terr > 0.15) tB++;
+    else if (Math.abs(n.terr) > 0.02) tM++;
+  }
   return { t: tNow, organs: ORGANS.map(o => ({ n: o.members.length, w: +o.w.toFixed(3),
     born: +o.born.toFixed(1), c: o.conductN || 0,
     meanX: +(o.members.reduce((s, m) => s + G.nodes[m].x, 0) / o.members.length).toFixed(2) })),
     biomass: +biomass.toFixed(2), sinkX: G.nodes[G.sink].x, gamma,
-    terr: { A: tA, B: tB, shareA: tA + tB ? +(tA / (tA + tB)).toFixed(3) : null } };
+    constT: constT === null ? null : +constT.toFixed(1),
+    terr: { A: tA, B: tB, moat: tM, shareA: tA + tB ? +(tA / (tA + tB)).toFixed(3) : null } };
 };
 window.score = () => {
   /* the fret census + full detail — the score pass's verifier hook */
