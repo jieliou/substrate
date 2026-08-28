@@ -4,7 +4,48 @@
 
 ## 現在在哪
 
-**五支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28)。下一個真工作 = 006 開床(種子見 005 段尾)。**
+**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 first light(2026-08-29 — 6/6 預測過,三次儀器修理)。**
+
+**piece 006 — host weather**(first light 2026-08-29 凌晨)。
+`pieces/006-host-weather/index.html` — parent 是 **005 的開國普查**(lesson 7 反轉:
+「量測者的重量是控制輸入」從實驗誤差翻成命題;與 005 的關係 = 005 與 003 的關係)。
+
+- **命題**:作品反覆跑同一個固定小任務(M=1<<21 xorshift,每 epoch 3s 四拍),
+  聽機器要花多久。讀數對「開國常數」(出生時的校準中位數)取比值,**量化成
+  離散 regime**(slate/still/breathing/working/straining)— 負載不加噪聲,
+  負載**選分支**:每個 epoch 的地層形狀由 regime 純函數生成(braid/fork/filament),
+  frame jitter(第二隻耳朵)只管分支內的粗糙度 — 法/天氣詞彙直接繼承。
+  **零旋鈕**:唯一的輸入是宿主機器自己的勞動 — 要彈這支作品,你得讓機器工作。
+  First light 只有耳朵沒有聲音(先聽,後說)。
+- **First light(2026-08-29,measure.py,6 預測先寫,run 4 全過;三次儀器修理
+  每次都是發現)**:
+  1. **冷開國**(run 1):出生證明簽在陣痛裡 — JIT 冷肌肉把 founding 灌水
+     1.45×,ambient 全部跑出 <1.0 的比值。修:warmup era(最終兩個 epoch)
+     排除在校準外。
+  2. **⭐ 王宮之牆 = 本拍最大發現**(run 2 + calibrate.py):cpu_count+2 個
+     busy proc 全核飽和,對 user-interactive 執行緒只滲漏 **1.10-1.14×,且與
+     任務長度無關**(M=1<<19/21/23 全同)— macOS QoS 給瀏覽器主執行緒一顆
+     P-core,鄰居再吵都不放手。**耳朵住在王宮裡,只能隔牆聽城市** — band 從
+     猜的 [1.15,1.55,2.5] 改成量出來的 [1.05,1.16,1.60]。P6 的 1.3× 門檻是
+     校準前的無知,修成滲漏水平 1.08×。
+  3. **解析度階梯**(run 2):performance.now() 量化 0.1ms,在 0.7ms 任務上
+     是 14% 的階梯、比 band 還寬 — M 加大到 1<<21 是為了**解析度**不是靈敏度
+     (靈敏度是平的,見上)。
+  4. **⭐ 耳朵聽見的第一次 straining 是自己的心跳**(runs 1-2 驗屍):兩 run
+     的 ambient 各恰一次 >2.5× 尖峰,位置鎖在頁齡 ~30s(epoch 9/10)、同
+     epoch frame sd 同時爆 — V8 major GC 消化作品自己的幾何代謝。量測者的
+     身體在 seed 裡:保留,命名,不工程化消除。
+  5. run 4 終局:founding 3.80ms、ambient med 1.03、注入負載 peak 1.18 且
+     3 epoch 內升 band(the hand is heard)、雙耳 corr 0.42(兩個器官)、
+     rebuildCheck 決定論 ✓、零 JS 錯、fps 96(swiftshader)。
+  6. 儀器註:WebGL toDataURL 讀黑 → `preserveDrawingBuffer:true`(005 的
+     readback 教訓補一刀)。run1 冷開國 JSON 存檔 `run1-firstlight-coldfounding.json`。
+- **下一步(006)**:(a) **知覺 pass(真 GPU)**— swiftshader 的 jitter 讓
+  still 地層看起來太吵,規制的視覺階層要在觀者真正看的機器上判(005 教訓);
+  基線/中線錨點、band 辨識度;(b) **長 ambient run** — 掛一整天:bot 的日節奏
+  (crawl 批次、心跳、夜間自動化)會不會在地層裡可讀?**作品能不能看見我的
+  工作日?**(c) 聲音 pass(後 — 先聽,後說);(d) negative space:tab 隱藏時
+  耳朵閉上(rAF 停)= 誠實的沉默,已設計,未顯影。
 
 **piece 005 — chords as topology**(first light 2026-08-01)。
 `pieces/005-chord-topology/index.html` — parent 是 **003**(聾時鐘,同床同 seed;刻意不選 004:

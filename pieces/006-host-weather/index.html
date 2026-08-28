@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>006 — host weather</title>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* substrate 006 — host weather (first light: an ear, no voice yet).
+     Lineage: 005's founding census found that machine load does not add
+     variance to the piece — it SELECTS a deterministic branch (8.0570 vs
+     7.15, load-keyed; "the measurer's weight is a control input"). Every
+     measurement pass treated that as confound. 006 inverts the role, the
+     way 005 inverted 003's meetings: the host machine's state IS the score.
+     The piece runs the same small task, over and over, and listens to how
+     long the machine takes. The reading is quantised into discrete regimes
+     — load selects a branch of the growing strata, it never modulates a
+     dial. Frame jitter (the second, independent ear) inflects roughness
+     WITHIN the branch: law and weather, inherited vocabulary.
+     No knobs. The only input is the host's own labor. To play this piece
+     you must make the machine work.
+     Born calibrated: the first four epochs measure this machine's founding
+     weather; every later reading is a ratio to that birth certificate. A
+     piece born in a storm will call storms still — that is not a bug, that
+     is 005's lesson kept honest (founding is weather).
+
+     FIRST-LIGHT PREDICTIONS (written before first run, craft rule 8):
+     P1 founding lands within 12-20 s; all founding-era epochs carry the
+        slate regime (no judgement before calibration).
+     P2 the host is not still — on the bot's Mac mini a 90 s ambient window
+        shows >= 2 distinct regimes (pm2 + bot + browser breathe).
+        Falsifier: one regime wall-to-wall (bands mis-set, retune).
+     P3 the two ears are different organs — corr(bench ratio, frame sd)
+        over ambient epochs < 0.8. Falsifier: they are one sensor.
+     P4 branch geometry is a pure function — rebuilding the last epoch from
+        its stored inputs reproduces the identical vertex hash.
+     P5 instrument — zero JS errors, fps at the machine's native cadence.
+     P6 the ear hears a hand on the machine — injected CPU load (external
+        busy processes) lifts bench ratio >= 1.3x its ambient median and
+        shifts the regime at least one band up within 3 epochs of onset.
+
+     RUN-1/2 AMENDMENTS (instrument findings, before run 3):
+     - Cold founding: the birth certificate was signed during labor pains
+       (JIT-cold 1.20 ms vs warm 0.83x) -> warm-up era added, epoch 0
+       excluded from calibration.
+     - THE PALACE WALL: calibrate.py at M = 1<<19/21/23 under full
+       user-space saturation (cpu_count+2 busy procs) leaks only 1.10-1.14x
+       at EVERY task length — macOS QoS gives the user-interactive thread a
+       P-core no matter how loud the neighbors get. The ear lives inside
+       the king's palace; it hears the city only through the wall. Bands
+       retuned from the measured range, not from guesses: [1.05,1.16,1.60],
+       HYST 0.02. P6's 1.3x clause was pre-calibration ignorance -> 1.08x.
+     - M raised 1<<19 -> 1<<21 for RESOLUTION, not sensitivity (sensitivity
+       is flat — the wall, see above): performance.now() quantises at
+       0.1 ms; on a 0.7 ms task that is a 14% staircase, wider than the
+       new bands. On a ~2.9 ms task it is 3.4%.
+     - THE FIRST STRAINING WAS ITS OWN HEARTBEAT: both runs' single
+       ambient spike (3.4x/3.9x, frame sd bursting in the same epoch) sits
+       at page age ~30 s — page-lifecycle keyed, not host weather. V8
+       major GC of the piece's own geometry churn: the measurer's body is
+       in the seed. Kept, named, not engineered away. */
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: default; touch-action: none; }
+  #title {
+    position: fixed; left: 16px; top: 14px; max-width: 64vw;
+    font: 300 11px/1.5 "IBM Plex Mono", ui-monospace, monospace;
+    color: #545b63; user-select: none;
+  }
+  #title b { color: #9aa3ad; font-weight: 400; }
+  #hud {
+    position: fixed; left: 16px; bottom: 14px; right: 16px;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    font: 300 11px/1.4 "IBM Plex Mono", ui-monospace, monospace;
+    color: #9aa3ad; user-select: none; -webkit-user-select: none;
+  }
+  #hud .k { color: #545b63; }
+  #hud .v { color: #cdd6df; }
+  #regime { min-width: 11ch; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title"><b>006 — host weather</b><br>
+the piece runs the same small task, over and over, and listens to how long
+the machine takes. load does not add noise — it selects a branch. no knobs:
+the only input is the host's own labor. (first light is an ear; it does not
+speak yet.)</div>
+<div id="hud">
+  <span><span class="k">bench</span> <span class="v" id="bench">—</span></span>
+  <span><span class="k">×founding</span> <span class="v" id="ratio">—</span></span>
+  <span><span class="k">frame</span> <span class="v" id="frame">—</span></span>
+  <span><span class="k">regime</span> <span id="regime">calibrating</span></span>
+  <span><span class="k">epoch</span> <span class="v" id="epoch">0</span></span>
+  <span class="k" id="fps"></span>
+</div>
+<script>
+'use strict';
+/* ---------- constants ---------- */
+const SEED = 20260829;
+const M = 1 << 21;              // bench iterations per rep — fixed forever (the contract; sized run-2 for timer resolution)
+const REPS = 4;                 // reps per epoch, spread out (sub-frame each)
+const EPOCH_S = 3;              // seconds of visible time per epoch
+const WARMUP_EPOCHS = 2;        // instrument warm-up (JIT + first-paint era) — excluded from calibration (runs 1-3 lesson)
+const FOUNDING_EPOCHS = 6;      // calibration era ends here; founding = epochs 2..5
+const VIEW = 72;                // epochs visible
+const CAP = 2400;               // epochs retained (~2 h)
+const BANDS = [1.05, 1.16, 1.60];  // still | breathing | working | straining — set from calibrate.py, run 2
+const HYST = 0.02;              // relative margin to cross a band boundary
+const REGIMES = [
+  { name: 'slate',     col: [0.42, 0.45, 0.48] },   // founding era (index -1 maps here)
+  { name: 'still',     col: [0.36, 0.53, 0.72] },
+  { name: 'breathing', col: [0.32, 0.72, 0.80] },
+  { name: 'working',   col: [0.85, 0.60, 0.25] },
+  { name: 'straining', col: [0.88, 0.34, 0.18] },
+];
+
+/* ---------- state / stats ---------- */
+const STATS = window.STATS = {
+  seed: SEED, M, founding: null, epochs: [], regimeCounts: {},
+  errors: [], fps: 0, _sink: 0,
+};
+window.onerror = (m) => { STATS.errors.push(String(m)); };
+window.addEventListener('unhandledrejection', e => STATS.errors.push(String(e.reason)));
+
+/* ---------- deterministic prng ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* ---------- the fixed task (the metronome) ---------- */
+function benchRep() {
+  const t0 = performance.now();
+  let x = (0x9e3779b9 ^ SEED) >>> 0;
+  for (let i = 0; i < M; i++) {
+    x ^= x << 13; x >>>= 0;
+    x ^= x >>> 17;
+    x ^= x << 5;  x >>>= 0;
+  }
+  STATS._sink = x;
+  return performance.now() - t0;
+}
+
+/* ---------- gl ---------- */
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: true, alpha: false, preserveDrawingBuffer: true });  // honest readback (verifier uses toDataURL)
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(canvas.clientWidth * dpr);
+  canvas.height = Math.floor(canvas.clientHeight * dpr);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener('resize', resize);
+
+function mkProg(vs, fs) {
+  const compile = (t, s) => {
+    const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+    return sh;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+const FADE = `
+  float fade(float x, float head) {
+    float age = head - x;
+    return 1.0 - smoothstep(${(VIEW * 0.75).toFixed(1)}, ${VIEW.toFixed(1)}, age);
+  }`;
+const lineProg = mkProg(`#version 300 es
+  in vec2 aPos; in vec4 aCol;
+  uniform float uHead;
+  out vec4 vCol;
+  ${FADE}
+  void main() {
+    float xn = -0.92 + 1.84 * (aPos.x - (uHead - ${VIEW.toFixed(1)})) / ${VIEW.toFixed(1)};
+    gl_Position = vec4(xn, aPos.y * 0.55, 0.0, 1.0);
+    vCol = vec4(aCol.rgb, aCol.a * fade(aPos.x, uHead));
+  }`, `#version 300 es
+  precision mediump float;
+  in vec4 vCol; out vec4 o;
+  void main() { o = vec4(vCol.rgb * vCol.a, vCol.a); }`);
+const pointProg = mkProg(`#version 300 es
+  in vec3 aPos; in vec4 aCol;
+  uniform float uHead; uniform float uDpr;
+  out vec4 vCol;
+  ${FADE}
+  void main() {
+    float xn = -0.92 + 1.84 * (aPos.x - (uHead - ${VIEW.toFixed(1)})) / ${VIEW.toFixed(1)};
+    gl_Position = vec4(xn, aPos.y * 0.55, 0.0, 1.0);
+    gl_PointSize = aPos.z * uDpr;
+    vCol = vec4(aCol.rgb, aCol.a * fade(aPos.x, uHead));
+  }`, `#version 300 es
+  precision mediump float;
+  in vec4 vCol; out vec4 o;
+  void main() {
+    vec2 d = gl_PointCoord - 0.5;
+    float m = smoothstep(0.5, 0.12, length(d));
+    o = vec4(vCol.rgb * vCol.a * m, vCol.a * m);
+  }`);
+gl.enable(gl.BLEND);
+gl.blendFunc(gl.ONE, gl.ONE);   // additive
+
+function mkVao(prog, posSize) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  const stride = (posSize + 4) * 4;
+  const aPos = gl.getAttribLocation(prog, 'aPos');
+  const aCol = gl.getAttribLocation(prog, 'aCol');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, posSize, gl.FLOAT, false, stride, 0);
+  gl.enableVertexAttribArray(aCol);
+  gl.vertexAttribPointer(aCol, 4, gl.FLOAT, false, stride, posSize * 4);
+  gl.bindVertexArray(null);
+  return { vao, buf, n: 0, posSize };
+}
+const lineVB = mkVao(lineProg, 2);
+const pointVB = mkVao(pointProg, 3);
+
+/* ---------- branch geometry (pure function of inputs) ---------- */
+/* regime index here: -1 founding/slate, 0..3 judged bands */
+function buildEpoch(i, regime, rough) {
+  const rng = mulberry32((SEED ^ Math.imul(i + 1, 2654435761) ^ Math.imul(regime + 2, 40503)) | 0);
+  const col = REGIMES[regime + 1].col;
+  const S = 18, lines = [], points = [];
+  const jag = () => (rng() - 0.5) * 2;
+  const phase = rng() * Math.PI * 2;
+  const pushSeg = (x0, y0, x1, y1, c, a) => lines.push(x0, y0, c[0], c[1], c[2], a, x1, y1, c[0], c[1], c[2], a);
+  const pushDot = (x, y, sz, c, a) => points.push(x, y, sz, c[0], c[1], c[2], a);
+  const strand = (amp, freq, ph, aBase, yOff = 0) => {
+    let px = i, py = yOff + amp * Math.sin(ph) + rough * 0.12 * jag();
+    for (let s = 1; s <= S; s++) {
+      const x = i + s / S;
+      const y = yOff + amp * Math.sin(freq * 2 * Math.PI * (s / S) + ph) + rough * 0.12 * jag();
+      pushSeg(px, py, x, y, col, aBase);
+      px = x; py = y;
+    }
+    return [px, py];
+  };
+  if (regime === -1) {                       // slate — unjudged founding strata
+    strand(0.02, 0.5, phase, 0.30);
+  } else if (regime === 0) {                 // still — one thin filament
+    strand(0.04, 1, phase, 0.42);
+  } else if (regime === 1) {                 // breathing — gentle arc + satellites
+    strand(0.22, 1, phase, 0.5);
+    pushDot(i + 0.25 + 0.1 * jag(), 0.26 * Math.sign(jag()), 3.2, col, 0.65);
+    pushDot(i + 0.72 + 0.1 * jag(), 0.26 * Math.sign(jag()), 2.6, col, 0.5);
+  } else if (regime === 2) {                 // working — three-strand braid
+    for (let k = 0; k < 3; k++) strand(0.30, 1.5, phase + k * 2.09, 0.42);
+    for (let k = 0; k < 3; k++) pushDot(i + rng(), 0.34 * jag(), 2.8, col, 0.55);
+  } else {                                   // straining — jagged filament + fork
+    let px = i, py = 0.1 * jag();
+    const forkAt = 0.3 + 0.4 * rng();
+    for (let s = 1; s <= S; s++) {
+      const x = i + s / S;
+      const y = 0.16 * jag() + rough * 0.15 * jag();
+      pushSeg(px, py, x, y, col, 0.6);
+      if (s / S >= forkAt && s / S - 1 / S < forkAt) {
+        const dir = Math.sign(jag()) || 1;
+        let fx = x, fy = y;
+        for (let f = 1; f <= 6; f++) {
+          const nx = x + f * 0.09, ny = y + dir * f * 0.11 + 0.05 * jag();
+          pushSeg(fx, fy, nx, ny, col, 0.55);
+          fx = nx; fy = ny;
+        }
+        pushDot(fx, fy, 4.0, col, 0.85);
+      }
+      px = x; py = y;
+    }
+    for (let k = 0; k < 4; k++) pushDot(i + rng(), 0.5 * jag(), 3.0, col, 0.7);
+  }
+  return { lines: new Float32Array(lines), points: new Float32Array(points) };
+}
+function fnv(arr) {
+  const b = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < b.length; i++) { h ^= b[i]; h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+STATS.rebuildCheck = () => {                 // P4 — determinism exposed to the verifier
+  const e = STATS.epochs[STATS.epochs.length - 1];
+  if (!e) return null;
+  const g = buildEpoch(e.i, e.regime, e.rough);
+  return { epoch: e.i, stored: e.hash, rebuilt: (fnv(g.lines) ^ fnv(g.points)) >>> 0,
+           ok: ((fnv(g.lines) ^ fnv(g.points)) >>> 0) === e.hash };
+};
+
+/* ---------- strata store ---------- */
+const strata = [];   // { i, geom }
+function rebuildBuffers() {
+  let ln = 0, pn = 0;
+  for (const s of strata) { ln += s.geom.lines.length; pn += s.geom.points.length; }
+  const L = new Float32Array(ln), P = new Float32Array(pn);
+  let lo = 0, po = 0;
+  for (const s of strata) {
+    L.set(s.geom.lines, lo); lo += s.geom.lines.length;
+    P.set(s.geom.points, po); po += s.geom.points.length;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, lineVB.buf);
+  gl.bufferData(gl.ARRAY_BUFFER, L, gl.DYNAMIC_DRAW);
+  lineVB.n = ln / 6;
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointVB.buf);
+  gl.bufferData(gl.ARRAY_BUFFER, P, gl.DYNAMIC_DRAW);
+  pointVB.n = pn / 7;
+}
+
+/* ---------- the ear ---------- */
+let epochIdx = 0;          // committed epochs
+let epochAccum = 0;        // visible seconds inside current epoch
+let repsDone = 0;
+let repTimes = [];
+let frameDts = [];
+let foundingReps = [];
+let currentRegime = -1;    // -1 until founding lands
+const hud = {
+  bench: document.getElementById('bench'), ratio: document.getElementById('ratio'),
+  frame: document.getElementById('frame'), regime: document.getElementById('regime'),
+  epoch: document.getElementById('epoch'), fps: document.getElementById('fps'),
+};
+const median = a => { const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; };
+
+function judge(r) {        // band selection with hysteresis (load SELECTS, never dials)
+  let g = currentRegime < 0 ? 0 : currentRegime;
+  while (g < BANDS.length && r > BANDS[g] * (1 + HYST)) g++;
+  while (g > 0 && r < BANDS[g - 1] * (1 - HYST)) g--;
+  return g;
+}
+
+function commitEpoch() {
+  const bench = repTimes.length ? median(repTimes) : null;
+  const dts = frameDts.filter(d => d < 100);
+  const mu = dts.length ? dts.reduce((a, b) => a + b, 0) / dts.length : 0;
+  const sd = dts.length > 1 ? Math.sqrt(dts.reduce((a, d) => a + (d - mu) ** 2, 0) / (dts.length - 1)) : 0;
+  const rough = Math.min(1, sd / 4);
+  let regime = -1, ratio = null;
+  if (STATS.founding === null) {
+    // warm-up era: JIT-cold reps + first-paint chaos are the instrument's
+    // own muscles, not the host's weather (runs 1-3: cold founding sat
+    // 5-45% above steady state — the birth certificate kept being signed
+    // during labor pains until two full epochs were discarded)
+    if (bench !== null && epochIdx >= WARMUP_EPOCHS) foundingReps.push(...repTimes);
+    if (epochIdx + 1 >= FOUNDING_EPOCHS && foundingReps.length >= REPS * 2) {
+      STATS.founding = median(foundingReps);
+    }
+  } else if (bench !== null) {
+    ratio = bench / STATS.founding;
+    regime = judge(ratio);
+    currentRegime = regime;
+  }
+  const geom = buildEpoch(epochIdx, regime, rough);
+  const hash = (fnv(geom.lines) ^ fnv(geom.points)) >>> 0;
+  strata.push({ i: epochIdx, geom });
+  if (strata.length > CAP) strata.splice(0, 400);
+  rebuildBuffers();
+  const name = REGIMES[regime + 1].name;
+  STATS.epochs.push({ i: epochIdx, t: performance.now() / 1000, bench, ratio, mu, sd, regime, rough, hash });
+  STATS.regimeCounts[name] = (STATS.regimeCounts[name] || 0) + 1;
+  hud.bench.textContent = bench === null ? '—' : bench.toFixed(2) + 'ms';
+  hud.ratio.textContent = ratio === null ? (STATS.founding === null ? 'calibrating' : '—')
+                                         : '×' + ratio.toFixed(2) + ' of ' + STATS.founding.toFixed(2) + 'ms';
+  hud.frame.textContent = mu.toFixed(1) + '±' + sd.toFixed(1) + 'ms';
+  const c = REGIMES[regime + 1].col;
+  hud.regime.textContent = name;
+  hud.regime.style.color = `rgb(${(c[0] * 255) | 0},${(c[1] * 255) | 0},${(c[2] * 255) | 0})`;
+  hud.epoch.textContent = String(epochIdx);
+  epochIdx++;
+  epochAccum = 0; repsDone = 0; repTimes = []; frameDts = [];
+}
+
+/* ---------- loop ---------- */
+let last = null, fpsN = 0, fpsT = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (last === null) { last = now; resize(); return; }
+  const dt = (now - last) / 1000; last = now;
+  if (dt > 0.25) return;                    // hidden-tab gap: the ear was closed, no data
+  frameDts.push(dt * 1000);
+  epochAccum += dt;
+  fpsN++; fpsT += dt;
+  if (fpsT >= 2) { STATS.fps = fpsN / fpsT; hud.fps.textContent = STATS.fps.toFixed(0) + ' fps'; fpsN = 0; fpsT = 0; }
+  const repDue = Math.floor(epochAccum / (EPOCH_S / REPS));
+  if (repsDone < REPS && repDue > repsDone) { repTimes.push(benchRep()); repsDone++; }
+  if (epochAccum >= EPOCH_S) commitEpoch();
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  const head = epochIdx + Math.min(1, epochAccum / EPOCH_S);
+  gl.useProgram(lineProg);
+  gl.uniform1f(gl.getUniformLocation(lineProg, 'uHead'), head);
+  gl.bindVertexArray(lineVB.vao);
+  gl.drawArrays(gl.LINES, 0, lineVB.n);
+  gl.useProgram(pointProg);
+  gl.uniform1f(gl.getUniformLocation(pointProg, 'uHead'), head);
+  gl.uniform1f(gl.getUniformLocation(pointProg, 'uDpr'), Math.min(window.devicePixelRatio || 1, 2));
+  gl.bindVertexArray(pointVB.vao);
+  gl.drawArrays(gl.POINTS, 0, pointVB.n);
+  gl.bindVertexArray(null);
+}
+benchRep(); benchRep();   // prime the JIT before any epoch listens
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
