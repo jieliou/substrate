@@ -58,7 +58,33 @@
        ambient spike (3.4x/3.9x, frame sd bursting in the same epoch) sits
        at page age ~30 s — page-lifecycle keyed, not host weather. V8
        major GC of the piece's own geometry churn: the measurer's body is
-       in the seed. Kept, named, not engineered away. */
+       in the seed. Kept, named, not engineered away.
+
+     PASS 3 — THE PERSISTENCE EAR (2026-08-30, predictions in analyze3.py):
+     Pass 2 proved the workday's amplitude lives below the timer quantum
+     (every hour's rel-p95 = exactly 1.031 = one 0.1 ms tick on a 3.2 ms
+     task). But a sub-quantum signal cannot hide its DURATION: quantisation
+     plus scheduler jitter act as natural dither, and a real load biases
+     which side of the quantum consecutive epochs land on. Run-length
+     analysis of the first workday (23,846 epochs): max up-run 35 vs iid
+     null p99 of 5 — and all 19 steady-state hours carry one ~95 s run
+     starting 15-26 s after the top of the hour at 1.10-1.21x. That is the
+     host's hourly pulse: the bot's crawlScan cron (0 * * * *) launching a
+     Camoufox headless browser — the one daily act heavy enough to saturate
+     the cores and leak through the palace wall. The ear heard neither the
+     city nor the mind (LLM thinking happens in another country's weather);
+     it heard the body. Amplitude analysis was blind to it (30 epochs =
+     2.5% of an hour, below the p95 tail; hourly means diluted 40:1).
+     So pass 3 grows a second organ: a rolling-median baseline (SLOW_N
+     epochs, the identity/legibility split the two foundings demanded —
+     founding stays the birth certificate, the slow median becomes the
+     ruler) and a run-length accumulator. Surprise = run x ln(1/p_up) nats;
+     past the null threshold the stratum warms toward ember, full ember at
+     ~5x threshold. Replayed against the workday: 19/19 hourly pulses
+     caught strong, zero strong marks away from the top of the hour, 2.5%
+     of epochs touched. The flat blue day becomes a string of hourly beads:
+     silence with a heartbeat. Weather here is not amplitude — it is
+     persistence. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: default; touch-action: none; }
   #title {
@@ -83,13 +109,16 @@
 <div id="title"><b>006 — host weather</b><br>
 the piece runs the same small task, over and over, and listens to how long
 the machine takes. load does not add noise — it selects a branch. no knobs:
-the only input is the host's own labor. (first light is an ear; it does not
-speak yet.)</div>
+the only input is the host's own labor. sustained sub-quantum warmth —
+too small to move the needle, too long to be chance — glows ember: the
+host's pulse, heard by persistence where amplitude is deaf. (an ear; it
+does not speak yet.)</div>
 <div id="hud">
   <span><span class="k">bench</span> <span class="v" id="bench">—</span></span>
   <span><span class="k">×founding</span> <span class="v" id="ratio">—</span></span>
   <span><span class="k">frame</span> <span class="v" id="frame">—</span></span>
   <span><span class="k">regime</span> <span id="regime">calibrating</span></span>
+  <span><span class="k">pulse</span> <span class="v" id="pulse">—</span></span>
   <span><span class="k">epoch</span> <span class="v" id="epoch">0</span></span>
   <span class="k" id="fps"></span>
 </div>
@@ -106,6 +135,9 @@ const VIEW = 72;                // epochs visible
 const CAP = 2400;               // epochs retained (~2 h)
 const BANDS = [1.05, 1.16, 1.60];  // still | breathing | working | straining — set from calibrate.py, run 2
 const HYST = 0.02;              // relative margin to cross a band boundary
+const SLOW_N = 512;             // pulse-organ rolling window (~26 min) — the ruler; founding stays the birth certificate
+const MIN_FILL = 128;           // organ is silent until the window has this much past (~6.5 min)
+const EMBER = [0.92, 0.52, 0.20];  // persistence warmth — sub-quantum, super-chance
 const REGIMES = [
   { name: 'slate',     col: [0.42, 0.45, 0.48] },   // founding era (index -1 maps here)
   { name: 'still',     col: [0.36, 0.53, 0.72] },
@@ -227,16 +259,24 @@ const lineVB = mkVao(lineProg, 2);
 const pointVB = mkVao(pointProg, 3);
 
 /* ---------- branch geometry (pure function of inputs) ---------- */
-/* regime index here: -1 founding/slate, 0..3 judged bands */
-function buildEpoch(i, regime, rough) {
+/* regime index here: -1 founding/slate, 0..3 judged bands.
+   pulse (pass 3): 0..1 persistence warmth — tints toward ember, thickens
+   the strand, and at >=0.5 deposits a bead. Deterministic: pulse is an
+   input like regime, stored per epoch, covered by the vertex hash. */
+function buildEpoch(i, regime, rough, pulse) {
   const rng = mulberry32((SEED ^ Math.imul(i + 1, 2654435761) ^ Math.imul(regime + 2, 40503)) | 0);
-  const col = REGIMES[regime + 1].col;
+  const p = pulse || 0;
+  const base = REGIMES[regime + 1].col;
+  const col = p > 0 ? [0, 1, 2].map(k => base[k] + (EMBER[k] - base[k]) * (0.25 + 0.75 * p)) : base;
+  const ampGain = 1 + 0.5 * p;
   const S = 18, lines = [], points = [];
   const jag = () => (rng() - 0.5) * 2;
   const phase = rng() * Math.PI * 2;
   const pushSeg = (x0, y0, x1, y1, c, a) => lines.push(x0, y0, c[0], c[1], c[2], a, x1, y1, c[0], c[1], c[2], a);
   const pushDot = (x, y, sz, c, a) => points.push(x, y, sz, c[0], c[1], c[2], a);
-  const strand = (amp, freq, ph, aBase, yOff = 0) => {
+  const strand = (amp0, freq, ph, aBase0, yOff = 0) => {
+    const amp = amp0 * ampGain;
+    const aBase = Math.min(0.9, aBase0 * (1 + 0.6 * p));
     let px = i, py = yOff + amp * Math.sin(ph) + rough * 0.12 * jag();
     for (let s = 1; s <= S; s++) {
       const x = i + s / S;
@@ -278,6 +318,7 @@ function buildEpoch(i, regime, rough) {
     }
     for (let k = 0; k < 4; k++) pushDot(i + rng(), 0.5 * jag(), 3.0, col, 0.7);
   }
+  if (p >= 0.5) pushDot(i + 0.5, 0, 3.2 + 2.5 * p, col, 0.55 + 0.35 * p);  // the bead — one per strong-pulse epoch
   return { lines: new Float32Array(lines), points: new Float32Array(points) };
 }
 function fnv(arr) {
@@ -289,7 +330,7 @@ function fnv(arr) {
 STATS.rebuildCheck = () => {                 // P4 — determinism exposed to the verifier
   const e = STATS.epochs[STATS.epochs.length - 1];
   if (!e) return null;
-  const g = buildEpoch(e.i, e.regime, e.rough);
+  const g = buildEpoch(e.i, e.regime, e.rough, e.pulse);
   return { epoch: e.i, stored: e.hash, rebuilt: (fnv(g.lines) ^ fnv(g.points)) >>> 0,
            ok: ((fnv(g.lines) ^ fnv(g.points)) >>> 0) === e.hash };
 };
@@ -324,6 +365,7 @@ let currentRegime = -1;    // -1 until founding lands
 const hud = {
   bench: document.getElementById('bench'), ratio: document.getElementById('ratio'),
   frame: document.getElementById('frame'), regime: document.getElementById('regime'),
+  pulse: document.getElementById('pulse'),
   epoch: document.getElementById('epoch'), fps: document.getElementById('fps'),
 };
 const median = a => { const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; };
@@ -333,6 +375,27 @@ function judge(r) {        // band selection with hysteresis (load SELECTS, neve
   while (g < BANDS.length && r > BANDS[g] * (1 + HYST)) g++;
   while (g > 0 && r < BANDS[g - 1] * (1 - HYST)) g--;
   return g;
+}
+
+/* ---------- the pulse organ (pass 3 — persistence where amplitude is deaf) ----------
+   Exact logic validated by replay in analyze3.py against the first workday:
+   19/19 hourly pulses caught strong, zero strong marks off the hour, 2.5%
+   of epochs touched. Pure function of bench history — no wall clock. */
+let pulseWin = [], pulseRun = 0;
+function hearPulse(bench) {
+  let pulse = 0;
+  if (pulseWin.length >= MIN_FILL) {
+    const sw = [...pulseWin].sort((a, b) => a - b);
+    const med = sw[sw.length >> 1];
+    const pUp = Math.max(1 / SLOW_N, Math.min(0.5, pulseWin.filter(v => v > med).length / pulseWin.length));
+    pulseRun = bench > med ? pulseRun + 1 : 0;
+    const surprise = pulseRun * Math.log(1 / pUp);   // nats against the iid null
+    const T = Math.log(pulseWin.length * 100);       // null bar: <1 such run per 100 windows
+    pulse = Math.max(0, Math.min(1, (surprise - T) / (T * 4)));  // full ember ~5x threshold
+  }
+  pulseWin.push(bench);
+  if (pulseWin.length > SLOW_N) pulseWin.shift();
+  return pulse;
 }
 
 function commitEpoch() {
@@ -356,13 +419,14 @@ function commitEpoch() {
     regime = judge(ratio);
     currentRegime = regime;
   }
-  const geom = buildEpoch(epochIdx, regime, rough);
+  const pulse = bench !== null ? hearPulse(bench) : 0;
+  const geom = buildEpoch(epochIdx, regime, rough, pulse);
   const hash = (fnv(geom.lines) ^ fnv(geom.points)) >>> 0;
   strata.push({ i: epochIdx, geom });
   if (strata.length > CAP) strata.splice(0, 400);
   rebuildBuffers();
   const name = REGIMES[regime + 1].name;
-  STATS.epochs.push({ i: epochIdx, t: performance.now() / 1000, bench, ratio, mu, sd, regime, rough, hash });
+  STATS.epochs.push({ i: epochIdx, t: performance.now() / 1000, bench, ratio, mu, sd, regime, rough, pulse, hash });
   STATS.regimeCounts[name] = (STATS.regimeCounts[name] || 0) + 1;
   hud.bench.textContent = bench === null ? '—' : bench.toFixed(2) + 'ms';
   hud.ratio.textContent = ratio === null ? (STATS.founding === null ? 'calibrating' : '—')
@@ -371,6 +435,11 @@ function commitEpoch() {
   const c = REGIMES[regime + 1].col;
   hud.regime.textContent = name;
   hud.regime.style.color = `rgb(${(c[0] * 255) | 0},${(c[1] * 255) | 0},${(c[2] * 255) | 0})`;
+  hud.pulse.textContent = pulseWin.length < MIN_FILL ? 'filling'
+                        : pulseRun === 0 ? '—'
+                        : `run ${pulseRun}` + (pulse > 0 ? ` ●${pulse.toFixed(2)}` : '');
+  hud.pulse.style.color = pulse > 0
+    ? `rgb(${(EMBER[0] * 255) | 0},${(EMBER[1] * 255) | 0},${(EMBER[2] * 255) | 0})` : '';
   hud.epoch.textContent = String(epochIdx);
   epochIdx++;
   epochAccum = 0; repsDone = 0; repTimes = []; frameDts = [];

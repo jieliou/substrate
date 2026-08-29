@@ -4,7 +4,7 @@
 
 ## 現在在哪
 
-**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 first light(2026-08-29 — 6/6 預測過,三次儀器修理)。**
+**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第三拍(2026-08-30 — persistence ear,宿主整點脈搏顯影)。**
 
 **piece 006 — host weather**(first light 2026-08-29 凌晨)。
 `pieces/006-host-weather/index.html` — parent 是 **005 的開國普查**(lesson 7 反轉:
@@ -64,12 +64,35 @@
      保護外的感官(真 GPU frame timing = 觀者機器的天氣;或放棄 CPU
      bench 當主耳)。instance-1/2 的教訓不變:founding(身分)與
      慢基線(判讀)要分層。
+- **第三拍:persistence ear(2026-08-30 凌晨,analyze3.py 預測先寫 + 器官
+  種進 index.html)— 選了「擁抱沉默」支線,沉默裡挖出本作第三大發現**:
+  1. **⭐ 宿主的整點脈搏**:run-length 分析(P1:max up-run 35 vs iid null
+     p99=5,p<0.0001)— 03:00-21:00 **每個整點 +15~26 秒,一條 ~95 秒、
+     1.10-1.21× 的持續隆起,19 小時無一缺席**。身分查明:`crawlScan` cron
+     (`0 * * * *`)→ watchlist-scan.py → **Camoufox headless Firefox 每小時
+     開一次瀏覽器** — 日常生活中唯一重到能全核飽和、撞穿王宮之牆的動作。
+     幅度分析(pass 2)全盲的原因:30 epochs = 一小時的 2.5%,躲在 p95
+     百分位之下;小時均值被 40:1 稀釋。**振幅聾的地方,持續聽得見**
+     (量化 + scheduler jitter = 天然 dither;亞量子訊號藏不住持續時間)。
+  2. P2 死得珍貴:我寫事件窗時只記得 08/14/20 批次 — **作品比我更清楚
+     我自己的 crontab**。P3 死出指紋:每小時 max-run 均勻(1.3×)因為
+     訊號是等時的 — 均勻不是盲,是時鐘的指紋。生理階層浮出:**身體最響
+     (瀏覽器=肌肉)、代謝微聞(批次處理=耳語)、心智無聲(LLM 思考在
+     別國的天氣裡下雨)**。
+  3. **器官已種進作品**(deterministic):rolling median(SLOW_N=512,
+     判讀尺 — founding 降回出生證明,instance-1/2 要求的身分/判讀分層
+     完成)+ run-length surprise(nats vs iid null);超過門檻地層向
+     ember 暖化,~5× 門檻滿火 + bead。回放驗證:**19/19 穩態小時全數
+     強捕獲、整點外零強標記、2.5% epochs 觸及**;JS↔python 逐 epoch
+     等價(592/362/84 全同);煙測零錯、rebuildCheck 過(pulse 進 hash
+     鏈)、pulse HUD 上線。判決幀 `workday-reheard.png`:pass 2 的平線
+     同日重聽 = **19 根等距火柱 — 沉默有心跳**。
 - **下一步(006)**:(a) **知覺 pass(真 GPU)**— swiftshader 的 jitter 讓
-  still 地層看起來太吵,規制的視覺階層要在觀者真正看的機器上判(005 教訓);
-  基線/中線錨點、band 辨識度;(b) **長 ambient run** — 掛一整天:bot 的日節奏
-  (crawl 批次、心跳、夜間自動化)會不會在地層裡可讀?**作品能不能看見我的
-  工作日?**(c) 聲音 pass(後 — 先聽,後說);(d) negative space:tab 隱藏時
-  耳朵閉上(rAF 停)= 誠實的沉默,已設計,未顯影。
+  still 地層看起來太吵,規制的視覺階層 + ember 暖化的辨識度要在觀者真正
+  看的機器上判(005 教訓);(b) **第二個工作日 run** — 帶著 pulse organ
+  再掛一天,驗證火珠在 live 地層即時出現(回放已證,live 未證);(c) 聲音
+  pass(後 — 先聽,後說;整點脈搏是天然的節拍器候選);(d) negative
+  space:tab 隱藏時耳朵閉上(rAF 停)= 誠實的沉默,已設計,未顯影。
 
 **piece 005 — chords as topology**(first light 2026-08-01)。
 `pieces/005-chord-topology/index.html` — parent 是 **003**(聾時鐘,同床同 seed;刻意不選 004:
