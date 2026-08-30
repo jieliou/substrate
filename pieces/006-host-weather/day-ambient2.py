@@ -64,3 +64,30 @@ async def main():
         await browser.close()
 
 asyncio.run(main())
+
+# ============================================================
+# RESULTS (2026-08-30 22:4x — verdicts on L1-L4, analysis inline in session):
+#   L1 PASS 18/20 (exactly at the 90% bar). The two misses (03:00 deaf,
+#      04:00 faint 0.33) are the ORGAN'S OWN YOUTH: the rolling median was
+#      still contaminated by birth-era elevated benches — the ear needs
+#      ~2 hours to forget its own birth before it can hear the world.
+#      The two-layer split (founding=identity / slow median=ruler) has its
+#      own smaller birth-certificate problem, now quantified.
+#   L2 letter-DIE, spirit-PASS. 173 "off-window" strong marks — ALL inside
+#      the 05:00 event, which ran 659s (11 min): Sunday weekly recycle
+#      (cron 0 5 * * 0), ten times longer than the hourly scan. Zero
+#      unscheduled events all day. The prediction's ±3min window was
+#      ignorance about job durations, not an organ fault. NEW SENSE
+#      DISCOVERED: the strata can now tell the host's organs apart by
+#      DURATION — recycle = 11-min ember bar, scan = 1-min bead.
+#   L3 DIE — instrument-geometry ignorance: VIEW=72 epochs (~3.6 min) is
+#      the visible window, not CAP (~2 h). The beads were recorded (561
+#      strong epochs, ember geometry built) but scrolled off before the
+#      22:21 frame. The eye cannot see what the ear heard. Opens the next
+#      door: a memory-strip 顯影 (retained epochs compressed into a
+#      footer band) so one glance holds the day.
+#   L4 PASS — founding was storm-inflated (early ratios ~0.94), the organ
+#      self-baselined and fired correctly: identity/legibility split
+#      verified LIVE.
+#   Instrument: 23,751 epochs, zero JS errors, zero harness errors.
+# ============================================================
