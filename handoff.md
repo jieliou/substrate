@@ -4,7 +4,7 @@
 
 ## 現在在哪
 
-**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第四拍(2026-08-30 — live organ 全日驗證:青春期聾 + 時長新感官)。**
+**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第五拍(2026-08-31 — memory strip:一眼持日)。**
 
 **piece 006 — host weather**(first light 2026-08-29 凌晨)。
 `pieces/006-host-weather/index.html` — parent 是 **005 的開國普查**(lesson 7 反轉:
@@ -102,12 +102,30 @@
      幀離上顆脈搏 20 分鐘,全捲出畫面。**耳朵聽見了,眼睛看不見歷史**。
   4. L4 過:founding 被 launcher 風暴灌水(早期 ratio ~0.94),器官
      自基線照常開火 — 分層設計 live 驗證。儀器:23,751 epochs 零錯。
-- **下一步(006)**:(a) ⭐ **memory-strip 顯影** — L3 開的門:把 CAP 保留
-  的歷史壓成 footer 帶,火珠/火條在帶上發光,一眼持有一天(這也是聲音
-  pass 的視覺前置:節拍器的譜面);(b) **知覺 pass(真 GPU)**— swiftshader
-  jitter 讓 still 地層太吵,ember 辨識度要在觀者機器上判(005 教訓);
-  (c) 聲音 pass(後 — 整點脈搏 + 時長分辨 = 天然的兩聲部節拍器);
-  (d) negative space:tab 隱藏時耳朵閉上 = 誠實的沉默,已設計,未顯影。
+- **第五拍:memory strip(2026-08-31 凌晨,verify5.py,S1-S5 預測先寫,
+  全過一次過 — 儀器血統首次「不用死三次」:死亡已遷移到上游的預測層)**:
+  L3 的門顯影。footer 帶 = 日長譜面(DAY_EPOCHS=28800 = 24h 的**聆聽**,
+  譜面時間是聽過的 epochs 不是牆鐘 — 耳朵閉上譜就停,與 pulse organ 同一條
+  no-wall-clock 法)。每 committed epoch 在自己的 slot 寫一根豎刻:高度/
+  顏色由 (regime, pulse) 純函數決定,ember 更高更暖,強脈搏(>=0.5)加
+  bead;帶從左往右填滿,像地震儀的鼓,滿一天換一圈(beads 清空)。
+  **細節會衰減(strata 忘掉 CAP 之外),摘要會存留(strip 持有一生)** —
+  這正是記憶階層:strata = working memory(2h),strip = episodic memory
+  (全日);也是聲音 pass 將要讀的譜。驗證(run-3 全日 23,751 epochs 經
+  頁面自身 replayStrip 路徑重放):S1 561/561 beads 零遺失;S2 18 叢、
+  最小叢距 47.3px(1280px 畫布)— 一眼分辨;S3 recycle 呼吸 219 epochs
+  vs 中位叢 20 = **10.9× 寬 — 時長變成寬度,run-3 的新感官在日尺度存活**;
+  S4 JS↔python f32 精確等價(FNV 1625136163 兩邊同,bead slots 全同);
+  S5 live 煙測 92fps 零錯,stripCheck/rebuildCheck 皆過。判決幀
+  `workday3-strip.png`:**第二個工作日整天壓進一條帶 — 安靜的青帶、18 根
+  等距 ember 柱、左側一塊 10× 寬的白熱條(週日 recycle 的 659 秒呼吸)**。
+- **下一步(006)**:(a) **知覺 pass(真 GPU)**— swiftshader jitter 讓
+  still 地層太吵,ember 辨識度 + strip 帶的 additive 飽和度要在觀者機器上判
+  (005 教訓);(b) 聲音 pass(整點脈搏 + 時長分辨 = 天然的兩聲部節拍器;
+  strip 就是譜面,視覺前置已完成);(c) negative space:tab 隱藏時耳朵
+  閉上 = 誠實的沉默 — strip 現在會顯影它(譜面停格),未專門驗證;
+  (d) 第三個工作日:live strip 全日 — 讓帶子當天長出來(前兩個工作日
+  都是 replay 重見)。
 
 **piece 005 — chords as topology**(first light 2026-08-01)。
 `pieces/005-chord-topology/index.html` — parent 是 **003**(聾時鐘,同床同 seed;刻意不選 004:
