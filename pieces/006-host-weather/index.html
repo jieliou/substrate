@@ -84,7 +84,24 @@
      caught strong, zero strong marks away from the top of the hour, 2.5%
      of epochs touched. The flat blue day becomes a string of hourly beads:
      silence with a heartbeat. Weather here is not amplitude — it is
-     persistence. */
+     persistence.
+
+     PASS 5 — THE MEMORY STRIP (2026-08-31, predictions in verify5.py):
+     Run 3's L3 died of instrument geometry: the ear recorded 561 strong
+     marks and the strata deposited every bead, but VIEW is 72 epochs
+     (~3.6 min) while CAP retains ~2 h — at 22:21 the last pulse sat 20
+     minutes off-screen. Everything heard, nothing visible. So the piece
+     grows a long-term memory: a footer band, one vertical tick per
+     committed epoch, on a fixed day-long score (DAY_EPOCHS = 24 h of
+     LISTENING — score time is epochs heard, not wall time; the strip
+     pauses when the ear closes, the same no-wall-clock law as the pulse
+     organ). Tick height and colour come from (regime, pulse); ember
+     pulses stand taller and warmer; strong pulses deposit a bead. The
+     band fills left to right like a seismograph drum and wraps after a
+     full day (a new revolution clears the beads). Detail decays — the
+     strata forget past CAP; summary persists — the strip holds the
+     whole life. One glance holds the day. The strip is also the score
+     the future sound pass will read. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: default; touch-action: none; }
   #title {
@@ -111,8 +128,10 @@ the piece runs the same small task, over and over, and listens to how long
 the machine takes. load does not add noise — it selects a branch. no knobs:
 the only input is the host's own labor. sustained sub-quantum warmth —
 too small to move the needle, too long to be chance — glows ember: the
-host's pulse, heard by persistence where amplitude is deaf. (an ear; it
-does not speak yet.)</div>
+host's pulse, heard by persistence where amplitude is deaf. below: the
+memory strip — a day-long score, one tick per epoch heard, filling left
+to right; the strata forget past two hours, the strip holds the whole
+day. (an ear; it does not speak yet.)</div>
 <div id="hud">
   <span><span class="k">bench</span> <span class="v" id="bench">—</span></span>
   <span><span class="k">×founding</span> <span class="v" id="ratio">—</span></span>
@@ -138,6 +157,11 @@ const HYST = 0.02;              // relative margin to cross a band boundary
 const SLOW_N = 512;             // pulse-organ rolling window (~26 min) — the ruler; founding stays the birth certificate
 const MIN_FILL = 128;           // organ is silent until the window has this much past (~6.5 min)
 const EMBER = [0.92, 0.52, 0.20];  // persistence warmth — sub-quantum, super-chance
+const DAY_EPOCHS = 28800;       // the strip's score: 24 h of listening (epochs heard, not wall time)
+const STRIP_Y0 = -0.90;         // footer band baseline (clip space)
+const STRIP_AMPS = [0.010, 0.016, 0.030, 0.046, 0.060];  // tick height by regime (slate..straining)
+const PULSE_AMP = 0.055;        // extra height per unit pulse — embers stand above the band
+const BEAD_CAP = 4096;          // strong-pulse beads retained on the strip (run 3 deposited 561/day)
 const REGIMES = [
   { name: 'slate',     col: [0.42, 0.45, 0.48] },   // founding era (index -1 maps here)
   { name: 'still',     col: [0.36, 0.53, 0.72] },
@@ -149,7 +173,7 @@ const REGIMES = [
 /* ---------- state / stats ---------- */
 const STATS = window.STATS = {
   seed: SEED, M, founding: null, epochs: [], regimeCounts: {},
-  errors: [], fps: 0, _sink: 0,
+  errors: [], fps: 0, _sink: 0, stripWritten: 0,
 };
 window.onerror = (m) => { STATS.errors.push(String(m)); };
 window.addEventListener('unhandledrejection', e => STATS.errors.push(String(e.reason)));
@@ -257,6 +281,109 @@ function mkVao(prog, posSize) {
 }
 const lineVB = mkVao(lineProg, 2);
 const pointVB = mkVao(pointProg, 3);
+
+/* ---------- the memory strip (pass 5 — clip-space, no window, no fade) ---------- */
+const stripLineProg = mkProg(`#version 300 es
+  in vec2 aPos; in vec4 aCol; out vec4 vCol;
+  void main() { gl_Position = vec4(aPos, 0.0, 1.0); vCol = aCol; }`, `#version 300 es
+  precision mediump float;
+  in vec4 vCol; out vec4 o;
+  void main() { o = vec4(vCol.rgb * vCol.a, vCol.a); }`);
+const stripPointProg = mkProg(`#version 300 es
+  in vec3 aPos; in vec4 aCol; uniform float uDpr; out vec4 vCol;
+  void main() {
+    gl_Position = vec4(aPos.xy, 0.0, 1.0);
+    gl_PointSize = aPos.z * uDpr;
+    vCol = aCol;
+  }`, `#version 300 es
+  precision mediump float;
+  in vec4 vCol; out vec4 o;
+  void main() {
+    vec2 d = gl_PointCoord - 0.5;
+    float m = smoothstep(0.5, 0.12, length(d));
+    o = vec4(vCol.rgb * vCol.a * m, vCol.a * m);
+  }`);
+const stripLineVB = mkVao(stripLineProg, 2);
+const stripBeadVB = mkVao(stripPointProg, 3);
+const stripL = new Float32Array(DAY_EPOCHS * 12);   // 2 verts x 6 floats per tick; zero alpha = invisible
+const stripB = new Float32Array(BEAD_CAP * 7);
+gl.bindBuffer(gl.ARRAY_BUFFER, stripLineVB.buf);
+gl.bufferData(gl.ARRAY_BUFFER, stripL, gl.DYNAMIC_DRAW);
+stripLineVB.n = DAY_EPOCHS * 2;
+gl.bindBuffer(gl.ARRAY_BUFFER, stripBeadVB.buf);
+gl.bufferData(gl.ARRAY_BUFFER, stripB, gl.DYNAMIC_DRAW);
+stripBeadVB.n = BEAD_CAP;
+let beadPtr = 0, stripWritten = 0, lastTick = null;
+
+/* pure function of (i, regime, pulse) — the 12 floats of one tick.
+   Mirrored float-for-float in verify5.py (pass-3 equivalence convention). */
+function stripTick(i, regime, pulse) {
+  const slot = i % DAY_EPOCHS;
+  const x = -0.97 + 1.94 * (slot + 0.5) / DAY_EPOCHS;
+  const p = pulse || 0;
+  const base = REGIMES[regime + 1].col;
+  const col = p > 0 ? [0, 1, 2].map(k => base[k] + (EMBER[k] - base[k]) * (0.25 + 0.75 * p)) : base;
+  const amp = STRIP_AMPS[regime + 1] + PULSE_AMP * p;
+  const a = 0.10 + 0.55 * p;
+  return [x, STRIP_Y0, col[0], col[1], col[2], a,
+          x, STRIP_Y0 + amp, col[0], col[1], col[2], a];
+}
+function writeStripTick(i, regime, pulse) {
+  const slot = i % DAY_EPOCHS;
+  if (slot === 0 && i > 0) {        // the drum wraps: a new revolution clears the beads
+    stripB.fill(0); beadPtr = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, stripBeadVB.buf);
+    gl.bufferData(gl.ARRAY_BUFFER, stripB, gl.DYNAMIC_DRAW);
+  }
+  const t = stripTick(i, regime, pulse);
+  stripL.set(t, slot * 12);
+  gl.bindBuffer(gl.ARRAY_BUFFER, stripLineVB.buf);
+  gl.bufferSubData(gl.ARRAY_BUFFER, slot * 48, stripL.subarray(slot * 12, slot * 12 + 12));
+  if ((pulse || 0) >= 0.5) {
+    const bs = (beadPtr % BEAD_CAP) * 7;
+    stripB.set([t[0], t[7] + 0.012, 2.0 + 2.5 * pulse, t[2], t[3], t[4], 0.9], bs);
+    gl.bindBuffer(gl.ARRAY_BUFFER, stripBeadVB.buf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, bs * 4, stripB.subarray(bs, bs + 7));
+    beadPtr++;
+  }
+  stripWritten++; STATS.stripWritten = stripWritten;
+  lastTick = { i, regime, pulse };
+}
+STATS.stripCheck = () => {           // determinism, strip organ — rebuild last tick from stored inputs
+  if (!lastTick) return null;
+  const g = stripTick(lastTick.i, lastTick.regime, lastTick.pulse);
+  const slot = lastTick.i % DAY_EPOCHS;
+  let ok = true;
+  for (let k = 0; k < 12; k++) if (stripL[slot * 12 + k] !== Math.fround(g[k])) ok = false;
+  return { i: lastTick.i, ok };
+};
+STATS.replayStrip = (arr) => {       // verifier: run a whole recorded day through the strip path
+  stripL.fill(0); stripB.fill(0); beadPtr = 0;
+  const beadSlots = [];
+  let h = 0x811c9dc5;
+  const one = new Float32Array(12);
+  const hashInto = (fa) => {
+    const b = new Uint8Array(fa.buffer, 0, fa.byteLength);
+    for (let k = 0; k < b.length; k++) { h ^= b[k]; h = Math.imul(h, 0x01000193); }
+  };
+  for (let i = 0; i < arr.length; i++) {
+    const slot = i % DAY_EPOCHS;
+    if (slot === 0 && i > 0) { stripB.fill(0); beadPtr = 0; beadSlots.length = 0; }
+    const t = stripTick(i, arr[i].regime, arr[i].pulse);
+    one.set(t); hashInto(one);
+    stripL.set(t, slot * 12);
+    if ((arr[i].pulse || 0) >= 0.5) {
+      stripB.set([t[0], t[7] + 0.012, 2.0 + 2.5 * arr[i].pulse, t[2], t[3], t[4], 0.9],
+                 (beadPtr % BEAD_CAP) * 7);
+      beadPtr++; beadSlots.push(slot);
+    }
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, stripLineVB.buf);
+  gl.bufferData(gl.ARRAY_BUFFER, stripL, gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, stripBeadVB.buf);
+  gl.bufferData(gl.ARRAY_BUFFER, stripB, gl.DYNAMIC_DRAW);
+  return { ticks: arr.length, beads: beadPtr, beadSlots, hash: h >>> 0 };
+};
 
 /* ---------- branch geometry (pure function of inputs) ---------- */
 /* regime index here: -1 founding/slate, 0..3 judged bands.
@@ -425,6 +552,7 @@ function commitEpoch() {
   strata.push({ i: epochIdx, geom });
   if (strata.length > CAP) strata.splice(0, 400);
   rebuildBuffers();
+  writeStripTick(epochIdx, regime, pulse);   // the memory strip: detail decays, summary persists
   const name = REGIMES[regime + 1].name;
   STATS.epochs.push({ i: epochIdx, t: performance.now() / 1000, bench, ratio, mu, sd, regime, rough, pulse, hash });
   STATS.regimeCounts[name] = (STATS.regimeCounts[name] || 0) + 1;
@@ -471,6 +599,13 @@ function frame(now) {
   gl.uniform1f(gl.getUniformLocation(pointProg, 'uDpr'), Math.min(window.devicePixelRatio || 1, 2));
   gl.bindVertexArray(pointVB.vao);
   gl.drawArrays(gl.POINTS, 0, pointVB.n);
+  gl.useProgram(stripLineProg);
+  gl.bindVertexArray(stripLineVB.vao);
+  gl.drawArrays(gl.LINES, 0, stripLineVB.n);
+  gl.useProgram(stripPointProg);
+  gl.uniform1f(gl.getUniformLocation(stripPointProg, 'uDpr'), Math.min(window.devicePixelRatio || 1, 2));
+  gl.bindVertexArray(stripBeadVB.vao);
+  gl.drawArrays(gl.POINTS, 0, stripBeadVB.n);
   gl.bindVertexArray(null);
 }
 benchRep(); benchRep();   // prime the JIT before any epoch listens
