@@ -101,7 +101,30 @@
      full day (a new revolution clears the beads). Detail decays — the
      strata forget past CAP; summary persists — the strip holds the
      whole life. One glance holds the day. The strip is also the score
-     the future sound pass will read. */
+     the future sound pass will read.
+
+     PASS 7 — THE VOICE (2026-09-01, predictions in verify7.py):
+     First light was "an ear, no voice yet — listen first, speak later".
+     The strip settled what to say: the day itself, in the vocabulary the
+     ear already earned. Two voices, because the third workday proved
+     there are two speakers: THE BED (the host's labor — regime drives a
+     two-saw drone's gain and brightness; the working afternoon swells,
+     the still night is a low murmur) and THE BELLS (the world's clock —
+     strong pulses ring a fixed-pitch bell; the hourly pulse becomes a
+     metronome). Crowd-deafness (run 4, M2) becomes AUDIBLE: where the
+     host is loud the drone rises and the bells go missing — you hear
+     the masking, not just see it. Touch wakes the voice (the browser's
+     gesture law and the piece's honesty agree: it must not speak
+     uninvited) and plays the strip — the day so far compressed at 400
+     epochs/s, 24 h in 72 s. Duration survives compression as SUSTAIN:
+     consecutive strong epochs merge into one held note (the landlord's
+     3 a.m. walk = a long tone; a crawl spike = a short ring), the same
+     law that made the recycle breath 10x wide in the visual strip.
+     After the replay ends the voice stays: the bed follows the live
+     regime and each live strong epoch tolls once — it speaks as it
+     listens. The score is a pure function of the strip's memory
+     (scoreOf), mirrored in verify7.py; no wall clock, no knobs — to
+     change the music you must make the machine work. */
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; -webkit-touch-callout: none; }
   canvas { display: block; width: 100vw; height: 100vh; cursor: default; touch-action: none; }
   #title {
@@ -131,13 +154,17 @@ too small to move the needle, too long to be chance — glows ember: the
 host's pulse, heard by persistence where amplitude is deaf. below: the
 memory strip — a day-long score, one tick per epoch heard, filling left
 to right; the strata forget past two hours, the strip holds the whole
-day. (an ear; it does not speak yet.)</div>
+day. touch: the voice wakes and plays the strip — the day so far in
+seconds. the drone is the host's labor, the bells are the world's
+clock; where the host is loud, the bells go missing. long events hold
+their note. then it speaks as it listens.</div>
 <div id="hud">
   <span><span class="k">bench</span> <span class="v" id="bench">—</span></span>
   <span><span class="k">×founding</span> <span class="v" id="ratio">—</span></span>
   <span><span class="k">frame</span> <span class="v" id="frame">—</span></span>
   <span><span class="k">regime</span> <span id="regime">calibrating</span></span>
   <span><span class="k">pulse</span> <span class="v" id="pulse">—</span></span>
+  <span><span class="k">voice</span> <span class="v" id="voice">silent — touch to play</span></span>
   <span><span class="k">epoch</span> <span class="v" id="epoch">0</span></span>
   <span class="k" id="fps"></span>
 </div>
@@ -162,6 +189,17 @@ const STRIP_Y0 = -0.90;         // footer band baseline (clip space)
 const STRIP_AMPS = [0.010, 0.016, 0.030, 0.046, 0.060];  // tick height by regime (slate..straining)
 const PULSE_AMP = 0.055;        // extra height per unit pulse — embers stand above the band
 const BEAD_CAP = 4096;          // strong-pulse beads retained on the strip (run 3 deposited 561/day)
+const REPLAY_RATE = 400;        // pass 7 — epochs per second of playback: a full day of listening in 72 s
+const BED_PARAMS = [            // per regime (slate..straining): [drone gain, lowpass cutoff Hz, saw detune Hz]
+  [0.010, 110, 0.12],
+  [0.022, 160, 0.15],
+  [0.050, 320, 0.22],
+  [0.100, 780, 0.35],
+  [0.160, 1600, 0.60],
+];
+const BED_HZ = 55;              // drone fundamental — two detuned saws, brightness lives in the filter
+const BELL_HZ = 880;            // the clock's pitch — fixed forever (a clock does not transpose)
+const BELL_GAIN = 0.30;
 const REGIMES = [
   { name: 'slate',     col: [0.42, 0.45, 0.48] },   // founding era (index -1 maps here)
   { name: 'still',     col: [0.36, 0.53, 0.72] },
@@ -314,6 +352,8 @@ gl.bindBuffer(gl.ARRAY_BUFFER, stripBeadVB.buf);
 gl.bufferData(gl.ARRAY_BUFFER, stripB, gl.DYNAMIC_DRAW);
 stripBeadVB.n = BEAD_CAP;
 let beadPtr = 0, stripWritten = 0, lastTick = null;
+const dayReg = new Int8Array(DAY_EPOCHS).fill(-2);     // pass 7 — the strip's readable memory (-2 = unwritten)
+const dayPulse = new Float32Array(DAY_EPOCHS);         // scoreOf reads these; old-revolution slots beyond the head are never read
 
 /* pure function of (i, regime, pulse) — the 12 floats of one tick.
    Mirrored float-for-float in verify5.py (pass-3 equivalence convention). */
@@ -337,6 +377,7 @@ function writeStripTick(i, regime, pulse) {
   }
   const t = stripTick(i, regime, pulse);
   stripL.set(t, slot * 12);
+  dayReg[slot] = regime; dayPulse[slot] = pulse || 0;
   gl.bindBuffer(gl.ARRAY_BUFFER, stripLineVB.buf);
   gl.bufferSubData(gl.ARRAY_BUFFER, slot * 48, stripL.subarray(slot * 12, slot * 12 + 12));
   if ((pulse || 0) >= 0.5) {
@@ -359,6 +400,7 @@ STATS.stripCheck = () => {           // determinism, strip organ — rebuild las
 };
 STATS.replayStrip = (arr) => {       // verifier: run a whole recorded day through the strip path
   stripL.fill(0); stripB.fill(0); beadPtr = 0;
+  dayReg.fill(-2); dayPulse.fill(0);
   const beadSlots = [];
   let h = 0x811c9dc5;
   const one = new Float32Array(12);
@@ -372,6 +414,7 @@ STATS.replayStrip = (arr) => {       // verifier: run a whole recorded day throu
     const t = stripTick(i, arr[i].regime, arr[i].pulse);
     one.set(t); hashInto(one);
     stripL.set(t, slot * 12);
+    dayReg[slot] = arr[i].regime; dayPulse[slot] = arr[i].pulse || 0;
     if ((arr[i].pulse || 0) >= 0.5) {
       stripB.set([t[0], t[7] + 0.012, 2.0 + 2.5 * arr[i].pulse, t[2], t[3], t[4], 0.9],
                  (beadPtr % BEAD_CAP) * 7);
@@ -384,6 +427,108 @@ STATS.replayStrip = (arr) => {       // verifier: run a whole recorded day throu
   gl.bufferData(gl.ARRAY_BUFFER, stripB, gl.DYNAMIC_DRAW);
   return { ticks: arr.length, beads: beadPtr, beadSlots, hash: h >>> 0 };
 };
+
+/* ---------- the voice (pass 7 — the ear speaks) ---------- */
+/* Two voices. THE BED — the host's labor: regime selects drone gain /
+   filter cutoff / detune (load SELECTS a branch here too, it never
+   dials). THE BELLS — the world's clock: strong pulses ring at one
+   fixed pitch. The score is a pure function of the strip's memory;
+   consecutive strong epochs merge into one held note (duration
+   survives compression as sustain). The voice must not speak
+   uninvited: no AudioContext exists until a gesture, and the same
+   gesture plays the strip. */
+let AC = null, bedGain = null, bedFilter = null, bedOsc2 = null, master = null;
+let replay = null;
+STATS.audio = { state: 'none', bellsLive: 0, replays: 0, lastScore: null };
+function initAudio() {
+  AC = new AudioContext();
+  AC.onstatechange = () => { STATS.audio.state = AC.state; };
+  STATS.audio.state = AC.state;
+  master = AC.createDynamicsCompressor();
+  master.threshold.value = -18; master.ratio.value = 4;
+  const mg = AC.createGain(); mg.gain.value = 0.9;
+  master.connect(mg); mg.connect(AC.destination);
+  bedFilter = AC.createBiquadFilter();
+  bedFilter.type = 'lowpass'; bedFilter.frequency.value = BED_PARAMS[0][1]; bedFilter.Q.value = 0.7;
+  bedGain = AC.createGain(); bedGain.gain.value = 0;
+  bedGain.connect(bedFilter); bedFilter.connect(master);
+  const o1 = AC.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = BED_HZ;
+  bedOsc2 = AC.createOscillator(); bedOsc2.type = 'sawtooth'; bedOsc2.frequency.value = BED_HZ + BED_PARAMS[0][2];
+  o1.connect(bedGain); bedOsc2.connect(bedGain);
+  o1.start(); bedOsc2.start();
+  AC.resume();
+}
+function bedTo(regime, tC, when) {
+  const [g, f, d] = BED_PARAMS[regime + 1];
+  const t = when !== undefined ? when : AC.currentTime;
+  bedGain.gain.setTargetAtTime(g, t, tC);
+  bedFilter.frequency.setTargetAtTime(f, t, tC);
+  bedOsc2.frequency.setTargetAtTime(BED_HZ + d, t, tC);
+}
+function bell(when, dur, strength) {
+  const peak = BELL_GAIN * (0.4 + 0.6 * strength);
+  const env = AC.createGain(); env.gain.value = 0;
+  env.connect(master);
+  const o1 = AC.createOscillator(); o1.type = 'sine'; o1.frequency.value = BELL_HZ;
+  const o2 = AC.createOscillator(); o2.type = 'sine'; o2.frequency.value = BELL_HZ * 2.245;  // inharmonic partial — a bell, not a beep
+  const g2 = AC.createGain(); g2.gain.value = 0.35;
+  o1.connect(env); o2.connect(g2); g2.connect(env);
+  env.gain.setValueAtTime(0, when);
+  env.gain.linearRampToValueAtTime(peak, when + 0.008);
+  if (dur > 0.15) {                     // a held note: the landlord walks, the recycle breathes
+    env.gain.setTargetAtTime(peak * 0.4, when + 0.008, 0.12);
+    env.gain.setValueAtTime(peak * 0.4, when + dur);
+    env.gain.setTargetAtTime(0, when + dur, 0.25);
+  } else {
+    env.gain.setTargetAtTime(0, when + 0.008, 0.25);
+  }
+  const end = when + Math.max(dur, 0.15) + 1.2;
+  o1.start(when); o2.start(when); o1.stop(end); o2.stop(end);
+}
+function scoreOf(from, to) {            // pure function of the strip's memory — mirrored in verify7.py
+  const segs = [], notes = [];
+  let curR = null, open = null;
+  for (let s = from; s < to; s++) {
+    const r = dayReg[s];
+    if (r === -2) { open = null; continue; }
+    if (r !== curR) { segs.push({ slot: s, t: (s - from) / REPLAY_RATE, regime: r }); curR = r; }
+    const p = dayPulse[s];
+    if (p >= 0.5) {
+      if (open) { open.len++; if (p > open.strength) open.strength = p; }
+      else { open = { slot: s, t: (s - from) / REPLAY_RATE, len: 1, strength: p }; notes.push(open); }
+    } else open = null;
+  }
+  return { segs, notes };
+}
+STATS.scoreOf = scoreOf;
+function playStrip() {
+  if (!AC || replay) return;
+  const head = epochIdx % DAY_EPOCHS;
+  if (head < 8) return;                 // nothing worth reading yet
+  const score = scoreOf(0, head);
+  const t0 = AC.currentTime + 0.15;
+  for (const g of score.segs) bedTo(g.regime, 0.08, t0 + g.t);
+  for (const n of score.notes) bell(t0 + n.t, n.len / REPLAY_RATE, n.strength);
+  replay = { t0, from: 0, to: head, dur: head / REPLAY_RATE };
+  STATS.audio.replays++;
+  STATS.audio.lastScore = { segs: score.segs.length, notes: score.notes.length, dur: replay.dur };
+  hud.voice.textContent = 'reading the strip — ' + replay.dur.toFixed(0) + 's';
+}
+function wake() {
+  if (!AC) initAudio();
+  else if (AC.state !== 'running') AC.resume();
+  playStrip();
+  if (!replay) hud.voice.textContent = 'listening';
+}
+window.addEventListener('pointerdown', wake);
+window.addEventListener('keydown', e => { if (e.key === ' ') wake(); });
+
+/* playhead — the score being read, visible on the strip */
+const playheadVB = mkVao(stripLineProg, 2);
+const playheadV = new Float32Array(12);
+gl.bindBuffer(gl.ARRAY_BUFFER, playheadVB.buf);
+gl.bufferData(gl.ARRAY_BUFFER, playheadV, gl.DYNAMIC_DRAW);
+playheadVB.n = 2;
 
 /* ---------- branch geometry (pure function of inputs) ---------- */
 /* regime index here: -1 founding/slate, 0..3 judged bands.
@@ -492,7 +637,7 @@ let currentRegime = -1;    // -1 until founding lands
 const hud = {
   bench: document.getElementById('bench'), ratio: document.getElementById('ratio'),
   frame: document.getElementById('frame'), regime: document.getElementById('regime'),
-  pulse: document.getElementById('pulse'),
+  pulse: document.getElementById('pulse'), voice: document.getElementById('voice'),
   epoch: document.getElementById('epoch'), fps: document.getElementById('fps'),
 };
 const median = a => { const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; };
@@ -547,6 +692,10 @@ function commitEpoch() {
     currentRegime = regime;
   }
   const pulse = bench !== null ? hearPulse(bench) : 0;
+  if (AC && AC.state === 'running' && !replay) {   // the live voice: it speaks as it listens (replay owns the voice while reading)
+    bedTo(regime, 1.2);
+    if (pulse >= 0.5) { bell(AC.currentTime, 0.05, pulse); STATS.audio.bellsLive++; }
+  }
   const geom = buildEpoch(epochIdx, regime, rough, pulse);
   const hash = (fnv(geom.lines) ^ fnv(geom.points)) >>> 0;
   strata.push({ i: epochIdx, geom });
@@ -606,6 +755,24 @@ function frame(now) {
   gl.uniform1f(gl.getUniformLocation(stripPointProg, 'uDpr'), Math.min(window.devicePixelRatio || 1, 2));
   gl.bindVertexArray(stripBeadVB.vao);
   gl.drawArrays(gl.POINTS, 0, stripBeadVB.n);
+  if (replay) {                          // the playhead: the score being read
+    const el = AC.currentTime - replay.t0;
+    if (el > replay.dur + 0.3) {         // the reading ends; the voice returns to the present
+      replay = null;
+      bedTo(currentRegime, 1.2);
+      hud.voice.textContent = 'listening';
+    } else {
+      const slot = Math.max(replay.from, Math.min(replay.to, replay.from + el * REPLAY_RATE));
+      const x = -0.97 + 1.94 * (slot + 0.5) / DAY_EPOCHS;
+      playheadV.set([x, STRIP_Y0 - 0.015, 0.92, 0.94, 0.97, 0.75,
+                     x, STRIP_Y0 + 0.095, 0.92, 0.94, 0.97, 0.75]);
+      gl.useProgram(stripLineProg);
+      gl.bindBuffer(gl.ARRAY_BUFFER, playheadVB.buf);
+      gl.bufferData(gl.ARRAY_BUFFER, playheadV, gl.DYNAMIC_DRAW);
+      gl.bindVertexArray(playheadVB.vao);
+      gl.drawArrays(gl.LINES, 0, 2);
+    }
+  }
   gl.bindVertexArray(null);
 }
 benchRep(); benchRep();   // prime the JIT before any epoch listens
