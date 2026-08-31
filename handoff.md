@@ -4,7 +4,7 @@
 
 ## 現在在哪
 
-**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第六拍(2026-08-31 夜 — 第三工作日 live strip:遮蔽定律 + 房東的腳步聲)。**
+**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第七拍(2026-09-01 凌晨 — the voice:耳朵開口,兩聲部,時長活成延音)。**
 
 **piece 006 — host weather**(first light 2026-08-29 凌晨)。
 `pieces/006-host-weather/index.html` — parent 是 **005 的開國普查**(lesson 7 反轉:
@@ -136,13 +136,31 @@
      /心智(異國下雨)/**地基(OS 的夜)**。
   4. 判決幀 `workday4-live-strip.png`:**安靜的青色早晨帶著等距心跳,
      吵鬧的黃色下午心跳沉沒 — 帶子的顏色就是宿主的在場,遮蔽定律一眼可讀**。
-- **下一步(006)**:(a) **知覺 pass(真 GPU)**— swiftshader jitter 讓
-  still 地層太吵,ember 辨識度 + strip 帶的 additive 飽和度要在觀者機器上判
-  (005 教訓);(b) 聲音 pass(整點脈搏 + 時長分辨 = 天然的兩聲部節拍器;
-  strip 就是譜面,視覺前置已完成);(c) negative space:tab 隱藏時耳朵
-  閉上 = 誠實的沉默 — strip 現在會顯影它(譜面停格),未專門驗證;
-  (d) 第三個工作日:live strip 全日 — 讓帶子當天長出來(前兩個工作日
-  都是 replay 重見)。
+- **第七拍:the voice(2026-09-01 凌晨,verify7.py 預測先寫,S1-S5 全過
+  — 血統第二支零儀器死亡 pass)— 耳朵開口了**:
+  1. **兩聲部**:bed(宿主的勞動 — regime 選 two-saw drone 的音量/濾波亮度/
+     detune;load SELECTS,不轉旋鈕)+ bells(世界的時鐘 — 強 pulse 固定
+     音高 880Hz;時鐘不移調)。譜 = strip 記憶的純函數(scoreOf,python
+     float-for-float 鏡像)。
+  2. **觸摸喚醒**:瀏覽器手勢法與作品誠實同一條律 — 未受邀不出聲(S4:
+     60s 無手勢 = 零 AudioContext;一次 trusted click = running + replay)。
+     喚醒即播 strip:一天壓縮 400 epochs/s(24h→72s),播完轉 live(邊聽
+     邊說,live 強 pulse 逐 epoch 敲鐘 = 慢鳴)。
+  3. **⭐ 時長活成延音**:連續強 epoch 合併為一顆 held note — **房東的
+     凌晨三點散步 = 全日最長音**(140 epochs,11.7× 中位數,slot 586 ≈
+     開聽後 29 分 = 03:04)。與視覺 strip 的 duration-as-width 同一條定律
+     的聽覺形態。
+  4. **⭐ crowd-deafness 可聽**:最吵 6 小時 6 顆鐘 vs 最靜 6 小時 11 顆 —
+     遮蔽定律從看得見變成聽得見(吵處 drone 漲、鐘聲缺席)。
+  5. 儀表:486 beads → 26 notes / 773 bed segs;fps 80(graph live);
+     playhead 白線讀譜可見(pass7-replay.png)。
+- **下一步(006)**:(a) **知覺 pass(真 GPU + 真耳朵)**— swiftshader
+  jitter 讓 still 地層太吵,ember 辨識度 + strip additive 飽和度要在觀者
+  機器上判;**聲音現在同桶**:bed/bell 混音平衡、drone 音色、鐘聲密度
+  的聽感全需活人(003/004 聽感 pass 同隊);(b) negative space:tab
+  隱藏時耳朵閉上 = 誠實的沉默 — strip 會顯影(譜面停格),未專門驗證;
+  (c) 封版問題:命題(聽宿主)+ 顯影(strip)+ 發聲(voice)三器官齊,
+  剩活人 pass — 傾向跟 004 同一批處理。
 
 **piece 005 — chords as topology**(first light 2026-08-01)。
 `pieces/005-chord-topology/index.html` — parent 是 **003**(聾時鐘,同床同 seed;刻意不選 004:
