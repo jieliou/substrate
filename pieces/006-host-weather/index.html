@@ -142,22 +142,59 @@
   #hud .k { color: #545b63; }
   #hud .v { color: #cdd6df; }
   #regime { min-width: 11ch; }
+  /* ---- reading key (pass 8 — legibility prototype; DOM-only, touches nothing) ---- */
+  #keyhint { color: #7b8590; cursor: pointer; }
+  #keyhint:hover { color: #cdd6df; }
+  #fulltext { display: none; margin-top: 6px; color: #545b63; }
+  body.key-on #fulltext { display: block; }
+  .cap {
+    display: none; position: fixed; max-width: 34ch;
+    font: 300 10.5px/1.55 "IBM Plex Mono", ui-monospace, monospace;
+    color: #9aa3ad; border-left: 1px solid #3a424b; padding-left: 9px;
+    user-select: none; pointer-events: none;
+  }
+  body.key-on .cap { display: block; }
+  .cap b { color: #cdd6df; font-weight: 400; }
+  .cap .zh { color: #6b7480; display: block; margin-top: 2px; }
+  #cap-strata { left: 12vw; top: 34vh; }
+  #cap-ember  { right: 8vw;  top: 46vh; text-align: left; }
+  #cap-strip  { left: 12vw; bottom: 11vh; }
+  #cap-voice  { right: 8vw; bottom: 11vh; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="title"><b>006 — host weather</b><br>
-the piece runs the same small task, over and over, and listens to how long
-the machine takes. load does not add noise — it selects a branch. no knobs:
-the only input is the host's own labor. sustained sub-quantum warmth —
-too small to move the needle, too long to be chance — glows ember: the
-host's pulse, heard by persistence where amplitude is deaf. below: the
-memory strip — a day-long score, one tick per epoch heard, filling left
-to right; the strata forget past two hours, the strip holds the whole
-day. touch: the voice wakes and plays the strip — the day so far in
-seconds. the drone is the host's labor, the bells are the world's
-clock; where the host is loud, the bells go missing. long events hold
-their note. then it speaks as it listens.</div>
+it runs one fixed small task, over and over, and listens to how long
+the machine takes. no knobs: the only input is the host's own labor.<br>
+<span id="keyhint">[?] reading key &nbsp;·&nbsp; touch wakes the voice</span>
+<span id="fulltext">load does not add noise — it selects a branch.
+sustained sub-quantum warmth — too small to move the needle, too long
+to be chance — glows ember: the host's pulse, heard by persistence
+where amplitude is deaf. below: the memory strip — a day-long score,
+one tick per epoch heard, filling left to right; the strata forget past
+two hours, the strip holds the whole day. touch: the voice wakes and
+plays the strip — the day so far in seconds. the drone is the host's
+labor, the bells are the world's clock; where the host is loud, the
+bells go missing. long events hold their note. then it speaks as it
+listens.</span></div>
+<div class="cap" id="cap-strata"><b>the strata</b> — each 3 s epoch grows
+one layer; the host's work chooses its shape. thin blue = a quiet
+machine; braided, warm, rough = a machine under strain.
+<span class="zh">地層:每 3 秒長一層。細藍=機器安靜;變粗變暖=機器在出力</span></div>
+<div class="cap" id="cap-ember"><b>ember</b> — warmth too small to move
+the needle but too long to be chance: the host's hourly pulse, heard by
+persistence where amplitude is deaf.
+<span class="zh">火痕:小到量不到、久到不是巧合的持續溫熱 — 宿主的整點脈搏</span></div>
+<div class="cap" id="cap-strip"><b>the memory strip</b> — one tick per
+epoch heard; a day fills it left to right. the strata above forget
+after two hours; this strip holds the whole day.
+<span class="zh">記憶帶:一天的譜面,由左往右填。地層兩小時就忘,這條帶記得一整天</span></div>
+<div class="cap" id="cap-voice"><b>the voice</b> — touch once: it plays
+the strip, the day so far in ~70 s, then keeps speaking as it listens.
+drone = the host's labor; bells = the world's clock; long events hold
+their note.
+<span class="zh">觸摸一下:把這一天播給你聽。低鳴=勞動;鐘聲=時鐘;長事件=長音</span></div>
 <div id="hud">
   <span><span class="k">bench</span> <span class="v" id="bench">—</span></span>
   <span><span class="k">×founding</span> <span class="v" id="ratio">—</span></span>
@@ -522,6 +559,17 @@ function wake() {
 }
 window.addEventListener('pointerdown', wake);
 window.addEventListener('keydown', e => { if (e.key === ' ') wake(); });
+
+/* ---------- reading key (pass 8 — legibility prototype) ----------
+   DOM-only: no epoch, no hash, no audio side effects. Reading the key
+   is not an invitation — toggling it must NOT wake the voice, so the
+   hint swallows its pointerdown before the window wake listener sees it. */
+function toggleKey() { document.body.classList.toggle('key-on'); }
+const keyhint = document.getElementById('keyhint');
+keyhint.addEventListener('pointerdown', e => { e.stopPropagation(); });
+keyhint.addEventListener('click', e => { e.stopPropagation(); toggleKey(); });
+window.addEventListener('keydown', e => { if (e.key === '?') toggleKey(); });
+if (new URLSearchParams(location.search).get('key') === '1') document.body.classList.add('key-on');
 
 /* playhead — the score being read, visible on the strip */
 const playheadVB = mkVao(stripLineProg, 2);

@@ -1,0 +1,34 @@
+{
+  "K1": {
+    "ok": true,
+    "capsVisible": 0,
+    "keyOn": false,
+    "hint": true,
+    "fulltextShown": false,
+    "epochs": 2,
+    "errors": 0
+  },
+  "K3": {
+    "ok": true,
+    "keyOn": true,
+    "caps": 4,
+    "ac": "null",
+    "replays": 0
+  },
+  "K4": {
+    "ok": true,
+    "toggledOff": true,
+    "ac": "exists",
+    "state": "running"
+  },
+  "K2": {
+    "ok": true,
+    "keyOn": true,
+    "caps": 4,
+    "fulltextShown": true,
+    "errors": 0
+  },
+  "K5": {
+    "ok": true
+  }
+}

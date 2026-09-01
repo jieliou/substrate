@@ -4,7 +4,7 @@
 
 ## 現在在哪
 
-**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第七拍(2026-09-01 凌晨 — the voice:耳朵開口,兩聲部,時長活成延音)。**
+**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第八拍(2026-09-02 凌晨 — reading key:可讀性原型,回應首位觀者)。**
 
 **piece 006 — host weather**(first light 2026-08-29 凌晨)。
 `pieces/006-host-weather/index.html` — parent 是 **005 的開國普查**(lesson 7 反轉:
@@ -154,6 +154,19 @@
      遮蔽定律從看得見變成聽得見(吵處 drone 漲、鐘聲缺席)。
   5. 儀表:486 beads → 26 notes / 773 bed segs;fps 80(graph live);
      playhead 白線讀譜可見(pass7-replay.png)。
+- **第八拍:reading key(2026-09-02 凌晨,verify8.py K1-K5 預測先寫,ALL PASS
+  — 回應首位觀者的 legibility gap;決定權仍留給活人 pass)**:
+  1. **診斷**:讀法一直都在 — 但它是 13 行小灰英文字的一面牆。觀者的
+     「不確定什麼意思」不是缺說明,是說明**沒有分層、沒有指著東西講**。
+  2. **形式:儀器圖例(legend),不是教學浮層**。title 收成三行(命題+
+     `[?] reading key`);圖例開啟時四張 caption 各自貼著器官(地層/火痕/
+     記憶帶/聲音),hairline 左緣、EN 主行 + 暗色中文副行;原全文段落
+     保留在圖例態的 title 下。`?` 鍵或點 `[?]` 切換;`?key=1` 直連。
+  3. **法的延伸:讀圖例不是邀請** — `[?]` 的 pointerdown 被吞掉,開圖例
+     不喚醒聲音(K3:AC 保持 null);空白鍵/畫布點擊的喚醒法不變(K4)。
+     DOM-only:零 epoch、零 hash、零 audio 副作用。
+  4. 儀器註:K2/K3 首跑死於探針無知 — `position:fixed` 元素 offsetParent
+     恆為 null,可見性判準換 `checkVisibility()`。判決幀 `pass8-key.png`。
 - **首位觀者 field data(2026-09-01 22:1x,Jie,自己的機器)**:回報「看到波形,
   但不確定什麼意思」— 四天的儀器驗證沒有覆蓋的維度:**可讀性**。title 文字存在
   但沒有完成解釋工作;讀法(線形=天氣、strip=日譜、觸摸=發聲)需要六段文字才傳達。
@@ -165,8 +178,10 @@
   機器上判;**聲音現在同桶**:bed/bell 混音平衡、drone 音色、鐘聲密度
   的聽感全需活人(003/004 聽感 pass 同隊);(b) negative space:tab
   隱藏時耳朵閉上 = 誠實的沉默 — strip 會顯影(譜面停格),未專門驗證;
-  (c) 封版問題:命題(聽宿主)+ 顯影(strip)+ 發聲(voice)三器官齊,
-  剩活人 pass — 傾向跟 004 同一批處理。
+  (c) 封版問題:命題(聽宿主)+ 顯影(strip)+ 發聲(voice)+ 圖例
+  (reading key,pass 8 原型)四器官齊,剩活人 pass — 傾向跟 004 同一批
+  處理;活人 pass 時給 Jie `?key=1` 直連,對著實物決「in-piece 解釋層
+  要不要留/怎麼留」(具體選項比抽象問題快)。
 
 **piece 005 — chords as topology**(first light 2026-08-01)。
 `pieces/005-chord-topology/index.html` — parent 是 **003**(聾時鐘,同床同 seed;刻意不選 004:
