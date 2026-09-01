@@ -154,6 +154,12 @@
      遮蔽定律從看得見變成聽得見(吵處 drone 漲、鐘聲缺席)。
   5. 儀表:486 beads → 26 notes / 773 bed segs;fps 80(graph live);
      playhead 白線讀譜可見(pass7-replay.png)。
+- **首位觀者 field data(2026-09-01 22:1x,Jie,自己的機器)**:回報「看到波形,
+  但不確定什麼意思」— 四天的儀器驗證沒有覆蓋的維度:**可讀性**。title 文字存在
+  但沒有完成解釋工作;讀法(線形=天氣、strip=日譜、觸摸=發聲)需要六段文字才傳達。
+  對知覺 pass 的補充問題:封版前要不要一個更好的 in-piece 解釋層(漸進式 caption?
+  首次互動引導?)— 或者接受「需要說明」是這類儀器作品的誠實屬性(對照:美術館牆上
+  也有作品說明)。與 004/006 活人 pass 同批決。
 - **下一步(006)**:(a) **知覺 pass(真 GPU + 真耳朵)**— swiftshader
   jitter 讓 still 地層太吵,ember 辨識度 + strip additive 飽和度要在觀者
   機器上判;**聲音現在同桶**:bed/bell 混音平衡、drone 音色、鐘聲密度
