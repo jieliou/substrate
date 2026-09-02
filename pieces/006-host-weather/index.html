@@ -476,7 +476,7 @@ STATS.replayStrip = (arr) => {       // verifier: run a whole recorded day throu
    gesture plays the strip. */
 let AC = null, bedGain = null, bedFilter = null, bedOsc2 = null, master = null;
 let replay = null;
-STATS.audio = { state: 'none', bellsLive: 0, replays: 0, lastScore: null };
+STATS.audio = { state: 'none', bellsLive: 0, replays: 0, lastScore: null, earClosed: 0 };
 function initAudio() {
   AC = new AudioContext();
   AC.onstatechange = () => { STATS.audio.state = AC.state; };
@@ -501,6 +501,9 @@ function bedTo(regime, tC, when) {
   bedGain.gain.setTargetAtTime(g, t, tC);
   bedFilter.frequency.setTargetAtTime(f, t, tC);
   bedOsc2.frequency.setTargetAtTime(BED_HZ + d, t, tC);
+}
+function bedOff(tC, when) {            // the closed ear is not slate — slate is a listener's whisper; this is silence
+  bedGain.gain.setTargetAtTime(0, when !== undefined ? when : AC.currentTime, tC);
 }
 function bell(when, dur, strength) {
   const peak = BELL_GAIN * (0.4 + 0.6 * strength);
@@ -547,6 +550,7 @@ function playStrip() {
   for (const g of score.segs) bedTo(g.regime, 0.08, t0 + g.t);
   for (const n of score.notes) bell(t0 + n.t, n.len / REPLAY_RATE, n.strength);
   replay = { t0, from: 0, to: head, dur: head / REPLAY_RATE };
+  bedOff(0.4, t0 + replay.dur + 0.3);   // the needle lifts when the record ends — even if nobody is watching (pass 9)
   STATS.audio.replays++;
   STATS.audio.lastScore = { segs: score.segs.length, notes: score.notes.length, dur: replay.dur };
   hud.voice.textContent = 'reading the strip — ' + replay.dur.toFixed(0) + 's';
@@ -559,6 +563,25 @@ function wake() {
 }
 window.addEventListener('pointerdown', wake);
 window.addEventListener('keydown', e => { if (e.key === ' ') wake(); });
+
+/* ---------- the closed ear (pass 9) ----------
+   The strata's gate is the browser itself: a hidden tab freezes rAF,
+   epochs simply stop, and the dt > 0.25 guard discards the seam. But
+   the voice is clocked by WebAudio, which does not sleep — without
+   this law the last chord would hold forever: a mouth still open
+   after the ear has closed. When the window goes dark the bed goes
+   out; a playing record finishes (reading memory is not listening)
+   but its needle lifts into silence. On return the ear re-opens
+   first — the next committed epoch re-voices the bed. */
+document.addEventListener('visibilitychange', () => {
+  if (!AC || AC.state !== 'running') return;
+  STATS.audio.earClosed += document.hidden ? 1 : 0;
+  if (document.hidden) {
+    if (!replay) { bedOff(0.4); hud.voice.textContent = 'ear closed'; }
+  } else if (!replay) {
+    hud.voice.textContent = 'listening';
+  }
+});
 
 /* ---------- reading key (pass 8 — legibility prototype) ----------
    DOM-only: no epoch, no hash, no audio side effects. Reading the key
@@ -740,7 +763,7 @@ function commitEpoch() {
     currentRegime = regime;
   }
   const pulse = bench !== null ? hearPulse(bench) : 0;
-  if (AC && AC.state === 'running' && !replay) {   // the live voice: it speaks as it listens (replay owns the voice while reading)
+  if (AC && AC.state === 'running' && !replay && !document.hidden) {   // the live voice: it speaks as it listens — and only while the ear-window is lit (pass 9)
     bedTo(regime, 1.2);
     if (pulse >= 0.5) { bell(AC.currentTime, 0.05, pulse); STATS.audio.bellsLive++; }
   }
@@ -807,8 +830,8 @@ function frame(now) {
     const el = AC.currentTime - replay.t0;
     if (el > replay.dur + 0.3) {         // the reading ends; the voice returns to the present
       replay = null;
-      bedTo(currentRegime, 1.2);
-      hud.voice.textContent = 'listening';
+      if (!document.hidden) { bedTo(currentRegime, 1.2); hud.voice.textContent = 'listening'; }
+      else hud.voice.textContent = 'ear closed';   // the record ended off-stage; the needle already lifted (pass 9)
     } else {
       const slot = Math.max(replay.from, Math.min(replay.to, replay.from + el * REPLAY_RATE));
       const x = -0.97 + 1.94 * (slot + 0.5) / DAY_EPOCHS;

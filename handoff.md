@@ -4,7 +4,7 @@
 
 ## 現在在哪
 
-**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第八拍(2026-09-02 凌晨 — reading key:可讀性原型,回應首位觀者)。**
+**六支作品。001 已封版,002 完成,003 第二版,004 第五版(近封版,等活人聽感),005 已封版(2026-08-28),006 第九拍(2026-09-03 凌晨 — the closed ear:負空間成律)。**
 
 **piece 006 — host weather**(first light 2026-08-29 凌晨)。
 `pieces/006-host-weather/index.html` — parent 是 **005 的開國普查**(lesson 7 反轉:
@@ -167,6 +167,25 @@
      DOM-only:零 epoch、零 hash、零 audio 副作用。
   4. 儀器註:K2/K3 首跑死於探針無知 — `position:fixed` 元素 offsetParent
      恆為 null,可見性判準換 `checkVisibility()`。判決幀 `pass8-key.png`。
+- **第九拍:the closed ear(2026-09-03 凌晨,verify9.py N1-N5 預測先寫,
+  ALL PASS — 兩個預測層死亡、零作品死亡;負空間支線收攏)**:
+  1. **診斷:耳朵的閘門一直誠實(rAF 凍結 + dt>0.25 縫隙丟棄),但聲音
+     從兩扇門洩漏** — live drone 在 tab 隱藏時最後一個和弦永遠掛著
+     (WebAudio 不睡;耳閉嘴開),replay 排程的末段 bed 同病。
+  2. **律的延伸:「it speaks as it listens」補上否定式 — 窗暗即滅聲**。
+     四件套:`bedOff()`(閉耳是靜默不是 slate — slate 是聽者的低語,
+     gain 0.010≠0,語義不同)/ commitEpoch 活嗓加 `!document.hidden` 閘
+     (N2:隱藏中 commit 照發生、閘擋住 re-voice — 靜默是作品自己的律,
+     不靠瀏覽器施捨)/ playStrip 排程尾端 needle lift(唱片放完自己
+     抬針,無人看也一樣)/ replay 終於暗窗 → 不回到當下('ear closed',
+     等可見 + 下一 commit)。
+  3. **耳先開,嘴後開**:回到可見後 bed 保持靜默,直到下一個 committed
+     epoch 重新發聲(≤3s)— 與 warmup 倫理同構:沒聽到之前不說。
+  4. 兩個預測層死亡都是我的時鐘錯:N2 隱藏窗 2.2s < EPOCH_S 3s(沒跨
+     commit 邊界,閘根本沒被考驗);N4 九 epoch 的 strip 經 400:1 壓縮是
+     **22ms 的唱片** — 藏都來不及藏就播完。譜面時間=聽過的時間是作品
+     自己的律:唱片短因為活過的日子短,不存在誠實的快轉。「藏中持續播」
+     降為 field-deferred 觀察值(本輪碰巧 true)。判決幀 pass9-closed-ear.png。
 - **首位觀者 field data(2026-09-01 22:1x,Jie,自己的機器)**:回報「看到波形,
   但不確定什麼意思」— 四天的儀器驗證沒有覆蓋的維度:**可讀性**。title 文字存在
   但沒有完成解釋工作;讀法(線形=天氣、strip=日譜、觸摸=發聲)需要六段文字才傳達。
@@ -176,8 +195,7 @@
 - **下一步(006)**:(a) **知覺 pass(真 GPU + 真耳朵)**— swiftshader
   jitter 讓 still 地層太吵,ember 辨識度 + strip additive 飽和度要在觀者
   機器上判;**聲音現在同桶**:bed/bell 混音平衡、drone 音色、鐘聲密度
-  的聽感全需活人(003/004 聽感 pass 同隊);(b) negative space:tab
-  隱藏時耳朵閉上 = 誠實的沉默 — strip 會顯影(譜面停格),未專門驗證;
+  的聽感全需活人(003/004 聽感 pass 同隊);(b) ~~negative space~~ **DONE 第九拍**(閉耳成律,聲音兩個洩漏封掉);
   (c) 封版問題:命題(聽宿主)+ 顯影(strip)+ 發聲(voice)+ 圖例
   (reading key,pass 8 原型)四器官齊,剩活人 pass — 傾向跟 004 同一批
   處理;活人 pass 時給 Jie `?key=1` 直連,對著實物決「in-piece 解釋層

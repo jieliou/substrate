@@ -1,0 +1,37 @@
+{
+  "N1": {
+    "ok": true,
+    "ac": "null",
+    "epochs": 2,
+    "errors": 0
+  },
+  "N2": {
+    "ok": true,
+    "epochsDuringHidden": 1,
+    "gain": 0,
+    "earClosed": 1,
+    "hud": "ear closed",
+    "epochs": 8
+  },
+  "N3": {
+    "ok": true,
+    "hudOnReturn": "listening",
+    "gain": 0.006095287390053272,
+    "hud": "listening"
+  },
+  "N4": {
+    "ok": true,
+    "midReplayPersists_observational": true,
+    "replays": 1,
+    "dur": 0.0225,
+    "hud": "ear closed",
+    "gainLater": 0.0006924424669705331
+  },
+  "N5": {
+    "ok": true,
+    "pageErrors": [],
+    "rebuildOk": true,
+    "stripOk": true,
+    "errors": 0
+  }
+}
