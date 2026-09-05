@@ -1,0 +1,185 @@
+<!doctype html>
+<!--
+  007 — flow between
+  first light 2026-09-06 03:4x (bot session, heartbeat)
+
+  命題: 九十六根短棒,每一根做完全相同的簡單運動 y = sin(2πf·τ + φ_i)。
+  振幅不變、頻率不變、每根棒永遠無知於鄰居。唯一會變的是「關係」——
+  相位場 φ_i(s) = dφ(s)·i + σ(s)·n_i。作品自己走一條 180 秒的來回路:
+  齊步(unison)→ 行波(wave)→ 人群(crowd)→ 原路返回。零旋鈕,
+  無牆鐘(τ 是聽過的 rAF 時間),決定論(n_i 出自 xorshift, seed 0x2A)。
+
+  儀表(the triangle instrument): 兩個數讀同一場運動 ——
+    R = |mean e^{iφ}|          全域同調(global coherence)
+    A = |mean e^{iΔφ_neighbor}| 鄰居協定(local agreement)
+  知覺三角形: 齊步 = (1,1)、行波 = (0,1)、人群 = (0,0)。
+  「流動」這個知覺只住在 (0,1) 角 —— 全域不同意、鄰居同意。
+  流動 = global disagreement + local agreement。任何單一 order parameter
+  都看不見眼睛看見的那件事(P2)。
+
+  PREDICTIONS (written before implementation, 2026-09-06 03:3x):
+    P1 (path)  探針掃完全程,三個角落實測落點:
+               s≈0   → R>0.95, A>0.95(齊步角)
+               s≈0.5 → R<0.15, A>0.95(行波角: K=6 整圈全相消)
+               s≈1   → R<0.15, A<0.35(人群角: 1/√N 量級)
+               Falsifier: 任一角未達 → 相位場推導錯。
+    P2 (blindness) 邊 A 全程 (s∈[0,0.5]) A>0.99 而 R 從 1 走到 0 ——
+               單數儀表對「齊步→行波」的轉變全盲;眼睛在乎的轉變
+               需要兩個數才看得見。Falsifier: A 中途下沉(= dφ ramp
+               空間不均,實作 bug)。
+    P3 (field-deferred, 活人 pass) 眼睛的流動閾值:邊 A 上流動感
+               出現於波長 ∈ [N/8, N/2](即 K∈[2,8] 圈);邊 B 上
+               流動感死於 σ<0.5(協定先於能量死)。眼睛是感測器,
+               headless 不可證 —— 誠實延後。
+    P4 (instrument) 決定論:兩次探針跑出的量化 (R,A) 序列 FNV-1a
+               hash 相同;零 JS 錯;fps 記錄在案。
+
+  house laws inherited: 零旋鈕(006)/ no-wall-clock(006 pulse organ)/
+  predictions-first(005 血統)/ 未受邀不出聲 —— 本作 first light 無聲。
+  parent: knowledge/creative/behavior-as-medium-no-display-layer-2026.md 律2
+  (Vacek《Fluidum》: 流動只存在於元件之間的關係)× m5stack(同步讀成意圖)。
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>007 — flow between</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0a0c;overflow:hidden}
+  canvas{display:block;width:100vw;height:100vh}
+  #hud{position:fixed;left:14px;bottom:12px;color:#8a8676;
+       font:10px/1.7 "IBM Plex Mono",ui-monospace,monospace;
+       user-select:none;pointer-events:none;white-space:pre}
+  #title{position:fixed;left:14px;top:12px;color:#6b675c;
+       font:10px/1.6 "IBM Plex Mono",ui-monospace,monospace;
+       user-select:none;pointer-events:none}
+  #title b{color:#a9a493;font-weight:400}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title"><b>007 — flow between</b>
+九十六根棒做同一個動作。會動的只有它們之間的關係。
+流動不住在任何一根棒裡。</div>
+<div id="hud"></div>
+<script>
+"use strict";
+// ---------- constants ----------
+const N = 96;                 // elements
+const F = 0.35;               // Hz, identical for every bar
+const K_MAX = 6;              // full phase turns across field at s=0.5
+const SWEEP = 180;            // s, full out-and-back
+const SEED = 0x2A;
+const TS = new URLSearchParams(location.search).get("probe") ? 30 : 1;
+const PROBE = TS !== 1;
+
+// ---------- deterministic noise field ----------
+function xorshift32(x){ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x>>>0; }
+const noise = new Float64Array(N);
+{ let st = SEED>>>0;
+  for (let i=0;i<N;i++){ st = xorshift32(st||1); noise[i] = (st/4294967296 - 0.5)*2*Math.PI; } }
+
+// ---------- phase field ----------
+// s in [0,1]: edge A (0→0.5) dφ ramps 0→2πK/N, σ=0
+//             edge B (0.5→1) dφ held, σ ramps 0→1
+function fieldAt(s){
+  const eA = Math.min(s,0.5)/0.5, eB = Math.max(0,s-0.5)/0.5;
+  return { dphi: eA * 2*Math.PI*K_MAX/N, sigma: eB };
+}
+function phase(i, fld){ return fld.dphi*i + fld.sigma*noise[i]; }
+
+// ---------- the two ears ----------
+function orderPair(fld){
+  let cr=0, sr=0, ca=0, sa=0;
+  let prev = phase(0,fld);
+  cr += Math.cos(prev); sr += Math.sin(prev);
+  for (let i=1;i<N;i++){
+    const p = phase(i,fld);
+    cr += Math.cos(p); sr += Math.sin(p);
+    const d = p - prev;
+    ca += Math.cos(d); sa += Math.sin(d);
+    prev = p;
+  }
+  return { R: Math.hypot(cr,sr)/N, A: Math.hypot(ca,sa)/(N-1) };
+}
+
+// ---------- time (no wall clock; gaps dropped) ----------
+let tau = 0, last = null, fps = 0, err = 0;
+window.addEventListener("error", ()=>{ err++; });
+
+// ---------- probe ----------
+const samples = [];
+let lastSample = -1;
+function fnv(str){ let h=0x811c9dc5;
+  for (let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
+  return h>>>0; }
+window.__report = () => {
+  const q = samples.map(x=>`${x.s.toFixed(3)},${x.R.toFixed(4)},${x.A.toFixed(4)}`).join(";");
+  return { n: samples.length, hash: fnv(q), samples, errors: err, fps: Math.round(fps) };
+};
+window.__done = false;
+
+// ---------- render ----------
+const cv = document.getElementById("c"), cx = cv.getContext("2d");
+const hud = document.getElementById("hud");
+function resize(){ cv.width = innerWidth*devicePixelRatio; cv.height = innerHeight*devicePixelRatio; }
+addEventListener("resize", resize); resize();
+
+function frame(t){
+  if (last !== null){
+    const dt = (t-last)/1000;
+    if (dt > 0 && dt < 0.25){ tau += dt*TS; fps = fps*0.95 + (1/dt)*0.05; }
+  }
+  last = t;
+
+  const cycle = tau % SWEEP;
+  const s = cycle < SWEEP/2 ? cycle/(SWEEP/2) : 2 - cycle/(SWEEP/2); // triangle 0→1→0
+  const fld = fieldAt(s);
+  const { R, A } = orderPair(fld);
+
+  if (PROBE){
+    const sec = Math.floor(tau);
+    if (sec !== lastSample && tau <= SWEEP){
+      lastSample = sec;
+      // sample the LAW, not the frame: pure re-derivation at integer tau
+      // (rebuildCheck bloodline — rAF jitter must not enter the record)
+      const sx = sec < SWEEP/2 ? sec/(SWEEP/2) : 2 - sec/(SWEEP/2);
+      const ox = orderPair(fieldAt(sx));
+      samples.push({ tau: sec, s: sx, R: ox.R, A: ox.A });
+    }
+    if (tau > SWEEP && !window.__done){ window.__done = true; }
+  }
+
+  // draw
+  const W = cv.width, H = cv.height, dpr = devicePixelRatio;
+  cx.fillStyle = "#0a0a0c"; cx.fillRect(0,0,W,H);
+  const marginX = W*0.08, pitch = (W-2*marginX)/(N-1);
+  const midY = H*0.52, amp = H*0.16, barLen = H*0.10, barW = Math.max(1.5*dpr, pitch*0.18);
+  const om = 2*Math.PI*F;
+  cx.fillStyle = "#d6d2c4";
+  for (let i=0;i<N;i++){
+    const y = midY + amp*Math.sin(om*tau + phase(i,fld));
+    cx.fillRect(marginX + i*pitch - barW/2, y - barLen/2, barW, barLen);
+  }
+
+  // triangle instrument (top right): corners U(1,1) W(0,1) C(0,0)
+  const tx = W - 150*dpr, ty = 26*dpr, tw = 110*dpr, th = 74*dpr;
+  cx.strokeStyle = "#2c2b26"; cx.lineWidth = 1;
+  cx.strokeRect(tx, ty, tw, th);
+  // axes: x = A (0→1 left→right), y = R (0→1 bottom→top)
+  cx.fillStyle = "#55524a";
+  cx.font = `${9*dpr}px ui-monospace,monospace`;
+  cx.fillText("R", tx-10*dpr, ty+10*dpr);
+  cx.fillText("A", tx+tw-8*dpr, ty+th+11*dpr);
+  const px = tx + A*tw, py = ty + (1-R)*th;
+  cx.fillStyle = "#e8b45a"; cx.beginPath(); cx.arc(px, py, 2.5*dpr, 0, 7); cx.fill();
+
+  hud.textContent =
+    `s ${s.toFixed(3)}   dφ ${(fld.dphi*N/(2*Math.PI)).toFixed(2)} turns   σ ${fld.sigma.toFixed(2)}\n` +
+    `R ${R.toFixed(3)}   A ${A.toFixed(3)}   τ ${tau.toFixed(1)}s   fps ${Math.round(fps)}`;
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

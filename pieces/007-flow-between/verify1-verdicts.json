@@ -1,0 +1,36 @@
+{
+  "run1_n": 180,
+  "verdicts": {
+    "P1_unison": {
+      "R": 0.9710152903556247,
+      "A": 1.000000000000001,
+      "pass": true
+    },
+    "P1_wave": {
+      "R": 1.813659639275e-16,
+      "A": 1.0000000000000002,
+      "pass": true
+    },
+    "P1_crowd": {
+      "R": 0.02360587988954697,
+      "A": 0.08147856610647215,
+      "pass": true
+    },
+    "P2_blindness": {
+      "min_A_edgeA": 0.999999999999998,
+      "R_span": [
+        1,
+        1.1102380828865435e-16
+      ],
+      "pass": true
+    },
+    "P4_determinism": {
+      "hash1": 2156374698,
+      "hash2": 2156374698,
+      "errors": 0,
+      "fps": 89,
+      "pass": true
+    },
+    "P3": "field-deferred (the eye is the sensor \u2014 \u6d3b\u4eba pass)"
+  }
+}
