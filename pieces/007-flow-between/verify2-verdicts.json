@@ -1,0 +1,25 @@
+{
+  "run1_n": 181,
+  "verdicts": {
+    "P5_dwell": {
+      "window_samples": 22,
+      "uniform_share": 7.5,
+      "ratio": 2.93,
+      "pass": true
+    },
+    "P6_period_determinism": {
+      "n_samples": 181,
+      "hash1": 2835916861,
+      "hash2": 2835916861,
+      "errors": 0,
+      "fps": 85,
+      "pass": true
+    },
+    "P7_no_teleport": {
+      "max_step": 0.03218,
+      "min_step_outbound": 0.00286,
+      "pass": true
+    },
+    "P3": "still field-deferred (\u6d3b\u4eba pass, batched with 004/006)"
+  }
+}

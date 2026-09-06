@@ -34,6 +34,25 @@
     P4 (instrument) 決定論:兩次探針跑出的量化 (R,A) 序列 FNV-1a
                hash 相同;零 JS 錯;fps 記錄在案。
 
+  PASS 2 — breathing pace (2026-09-07 03:3x, bot session)
+  等速三角波換成「知覺等速」:時間按儀表弧長重新參數化 ——
+  作品在 (R,A) 空間裡等速行走,參數速度自動在知覺轉變處放慢。
+  sample the law, not the frame 的續章: walk by the gauge, not the map。
+  β=0.7 混合(七成時間按弧長分配,三成均勻 —— 平坦區不凍結)。
+
+  PASS-2 PREDICTIONS (written before implementation, 2026-09-07 03:3x):
+    P5 (dwell) 知覺最陡的「行波誕生」窗(edge A 前 1/K_MAX,
+        s∈[0,0.0833])在整數 τ 取樣中拿到 ≥2.5× 均勻份額:半掃 90 拍
+        中 ≥19 拍落窗內(均勻 = 7.5)。理論:窗內弧長 ≈ 主坍縮 1.0 /
+        全程 ≈3.2,時間份額 ≈ 0.3×0.083 + 0.7×0.31 ≈ 24%。
+        Falsifier: <15 拍 → 弧長集中假設錯,或 warp 實作漏。
+    P6 (period + determinism) warp 歸一化後總週期仍恰 SWEEP;兩 run
+        FNV hash 仍同(warp 是常數的純函數)。Falsifier: hash 不同 →
+        warp 表洩入非決定性。
+    P7 (no teleport) 呼吸不是跳格:相鄰整數 τ 的 |Δs| ≤ 0.04(平坦區
+        加速上限 = 均勻 0.0111 ÷ 0.3)且轉變區最小步 ≤ 0.0045(≥2.5×
+        減速)。Falsifier: 任一步 > 0.05 → 視覺瞬移,呼吸失敗。
+
   house laws inherited: 零旋鈕(006)/ no-wall-clock(006 pulse organ)/
   predictions-first(005 血統)/ 未受邀不出聲 —— 本作 first light 無聲。
   parent: knowledge/creative/behavior-as-medium-no-display-layer-2026.md 律2
@@ -102,6 +121,37 @@ function orderPair(fld){
   return { R: Math.hypot(cr,sr)/N, A: Math.hypot(ca,sa)/(N-1) };
 }
 
+// ---------- breathing pace (pass 2): walk by the gauge, not the map ----------
+// Time is re-parameterized by arc length in instrument space (R,A):
+// the piece walks at constant *perceptual* speed. β blends with uniform
+// so flat regions keep moving. Pure function of constants → deterministic.
+const M = 480, BETA = 0.7;
+const warpC = new Float64Array(M + 1);
+{
+  const Rs = new Float64Array(M + 1), As = new Float64Array(M + 1);
+  for (let j = 0; j <= M; j++){ const o = orderPair(fieldAt(j / M)); Rs[j] = o.R; As[j] = o.A; }
+  let arc = 0; const d = new Float64Array(M);
+  for (let j = 0; j < M; j++){ d[j] = Math.hypot(Rs[j+1]-Rs[j], As[j+1]-As[j]); arc += d[j]; }
+  let c = 0;
+  for (let j = 0; j < M; j++){ c += (1 - BETA) / M + BETA * d[j] / arc; warpC[j + 1] = c; }
+  for (let j = 0; j <= M; j++) warpC[j] /= warpC[M];   // exact 1 at the end (float guard)
+}
+function warpSeg(u){        // binary search: warpC[lo] <= u < warpC[lo+1]
+  let lo = 0, hi = M;
+  while (hi - lo > 1){ const mid = (lo + hi) >> 1; if (warpC[mid] <= u) lo = mid; else hi = mid; }
+  return lo;
+}
+function warp(u){           // time fraction u∈[0,1] → parameter s∈[0,1]
+  if (u <= 0) return 0; if (u >= 1) return 1;
+  const lo = warpSeg(u);
+  return (lo + (u - warpC[lo]) / (warpC[lo + 1] - warpC[lo])) / M;
+}
+function dwellAt(u){        // dwell factor vs uniform walk (HUD)
+  if (u <= 0 || u >= 1) return 1;
+  const lo = warpSeg(u);
+  return (warpC[lo + 1] - warpC[lo]) * M;
+}
+
 // ---------- time (no wall clock; gaps dropped) ----------
 let tau = 0, last = null, fps = 0, err = 0;
 window.addEventListener("error", ()=>{ err++; });
@@ -132,19 +182,25 @@ function frame(t){
   last = t;
 
   const cycle = tau % SWEEP;
-  const s = cycle < SWEEP/2 ? cycle/(SWEEP/2) : 2 - cycle/(SWEEP/2); // triangle 0→1→0
+  const u = cycle < SWEEP/2 ? cycle/(SWEEP/2) : 2 - cycle/(SWEEP/2); // triangle 0→1→0 (time fraction)
+  const s = warp(u);                                                 // breathing pace (pass 2)
   const fld = fieldAt(s);
   const { R, A } = orderPair(fld);
 
   if (PROBE){
-    const sec = Math.floor(tau);
-    if (sec !== lastSample && tau <= SWEEP){
-      lastSample = sec;
-      // sample the LAW, not the frame: pure re-derivation at integer tau
-      // (rebuildCheck bloodline — rAF jitter must not enter the record)
-      const sx = sec < SWEEP/2 ? sec/(SWEEP/2) : 2 - sec/(SWEEP/2);
+    // sample the LAW, not the frame (first-light repair) — AND sample the
+    // SCHEDULE, not the frame (pass-2 repair): a stalled frame can carry
+    // floor(tau) across several integers; the old `sec !== lastSample`
+    // gate silently dropped the ones in between, so completeness rode
+    // frame luck (screenshot stall → 177 vs 180 samples, hashes split).
+    // Catch-up loop: every integer tau passed gets its pure re-derivation.
+    const top = Math.min(Math.floor(tau), SWEEP);
+    for (let sec = lastSample + 1; sec <= top; sec++){
+      const ux = sec < SWEEP/2 ? sec/(SWEEP/2) : 2 - sec/(SWEEP/2);
+      const sx = warp(ux);
       const ox = orderPair(fieldAt(sx));
       samples.push({ tau: sec, s: sx, R: ox.R, A: ox.A });
+      lastSample = sec;
     }
     if (tau > SWEEP && !window.__done){ window.__done = true; }
   }
@@ -174,7 +230,7 @@ function frame(t){
   cx.fillStyle = "#e8b45a"; cx.beginPath(); cx.arc(px, py, 2.5*dpr, 0, 7); cx.fill();
 
   hud.textContent =
-    `s ${s.toFixed(3)}   dφ ${(fld.dphi*N/(2*Math.PI)).toFixed(2)} turns   σ ${fld.sigma.toFixed(2)}\n` +
+    `s ${s.toFixed(3)}   dφ ${(fld.dphi*N/(2*Math.PI)).toFixed(2)} turns   σ ${fld.sigma.toFixed(2)}   pace ×${dwellAt(u).toFixed(1)}\n` +
     `R ${R.toFixed(3)}   A ${A.toFixed(3)}   τ ${tau.toFixed(1)}s   fps ${Math.round(fps)}`;
 
   requestAnimationFrame(frame);
