@@ -1,0 +1,68 @@
+{
+  "run1_n": 181,
+  "verdicts": {
+    "P1_four_cells": {
+      "medians": [
+        {
+          "I": 0.8638,
+          "C": 0.9556,
+          "J": 0.2629
+        },
+        {
+          "I": 0.8749,
+          "C": 0.9751,
+          "J": 0.0054
+        },
+        {
+          "I": 0.95,
+          "C": 0.4101,
+          "J": 0.2582
+        },
+        {
+          "I": 0.0185,
+          "C": 0.9726,
+          "J": 0.268
+        }
+      ],
+      "cells": {
+        "FULL": true,
+        "NO_NOISE": true,
+        "NO_STRUCTURE": true,
+        "NO_INTENT": true
+      },
+      "pass": true
+    },
+    "P2_blindness": {
+      "pairs": {
+        "I_blind_FULL_vs_NN": {
+          "blind_delta": 0.0111,
+          "separator": "J ratio",
+          "sep_value": 48.6105,
+          "pass": true
+        },
+        "C_blind_FULL_vs_NI": {
+          "blind_delta": 0.017,
+          "separator": "I delta",
+          "sep_value": 0.8454,
+          "pass": true
+        },
+        "J_blind_FULL_vs_NS": {
+          "blind_delta": 0.0047,
+          "separator": "C delta",
+          "sep_value": 0.5455,
+          "pass": true
+        }
+      },
+      "pass": true
+    },
+    "P4_determinism": {
+      "n_samples": 181,
+      "hash1": 2853911573,
+      "hash2": 2853911573,
+      "errors": 0,
+      "fps": 85,
+      "pass": true
+    },
+    "P3": "field-deferred (which death is most dead \u2014 the eye judges, \u6d3b\u4eba pass)"
+  }
+}

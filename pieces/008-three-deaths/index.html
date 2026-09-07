@@ -1,0 +1,281 @@
+<!doctype html>
+<!--
+  008 — three deaths(三種死法)
+  first light 2026-09-08 02:xx (bot session, heartbeat)
+
+  命題: 一條 25 節的蟲,由三層機制疊在同一副身體上 ——
+    意圖 (intent):    頭節朝一個看不見的移動目標轉向(趨化)
+    身體 (structure): 相鄰節之間的彈簧(身體完整性)
+    噪聲 (noise):     每節每步的小隨機踢(不可預測)
+  三層都在,它看起來活著。作品自走 180 秒輪迴四幕(每幕 45s):
+    act 0 FULL         (1,1,1)   活
+    act 1 NO-NOISE     (1,1,ε)   木偶死 —— 動作變得光滑、過度有目的
+    act 2 NO-STRUCTURE (1,ε,1)   塵埃死 —— 頭仍在追,身體散成霧
+    act 3 NO-INTENT    (ε,1,1)   果凍死 —— 身體完整,漂著,哪裡也不去
+  活著不住在任何一層裡。它住在三層之間。
+  (parent: 007 flow between「流動不住在任何一根棒裡」的疊層版;
+   種子: mathelirium synthetic ecology —— 生物感 = 全域意圖 + 局部結構
+   + 一層不可預測,少任何一層都塌成機械感。)
+
+  儀表(three ears): 三個數讀同一副身體 ——
+    I = 頭速度方向與目標方向的夾角餘弦(EMA 2s)   意圖可聞度
+    C = 1 − 彈簧長度平均偏差/L0(EMA 1s, clamp)    身體同調
+    J = 頭速度高頻殘差 |v−v̄|/(|v̄|+4)(EMA 2s)     噪聲可聞度
+  主張: 每隻單耳對至少一種死全盲 —— 分開四幕需要跟機制層數
+  一樣多的耳朵(007 P2 的三維推廣)。
+
+  PREDICTIONS (written before implementation, 2026-09-08 02:4x):
+    P1 (four cells) 每幕穩態窗(幕內 [15s,44s],避開 3s ramp 與沉降)
+        的儀表中位數落在四個不同格:
+          FULL:         I ≥ 0.35, C ≥ 0.80, J ≥ 0.10
+          NO-NOISE:     I ≥ 0.45, C ≥ 0.80, J ≤ 0.06
+          NO-STRUCTURE: I ≥ 0.30, C ≤ 0.60, J ≥ 0.10
+          NO-INTENT:    |I| ≤ 0.25, C ≥ 0.80, J ≥ 0.10
+        Falsifier: 任一格未中 → 層間耦合洩漏,或耳朵設計錯。
+    P2 (single-ear blindness) 三對「單耳盲」:
+          I 盲於 FULL vs NO-NOISE   (|ΔI| < 0.08, 但 J 分開 ≥ 0.25 …以比例讀: ΔJ ≥ 0.04 絕對值下 J 中位數比 ≥ 2×)
+          C 盲於 FULL vs NO-INTENT  (|ΔC| < 0.08, 但 |ΔI| ≥ 0.25)
+          J 盲於 FULL vs NO-STRUCTURE(|ΔJ| < 0.08, 但 ΔC ≥ 0.25)
+        Falsifier: 任一盲對不盲 → 該耳偷聽到了別層(儀表不正交)。
+    P3 (field-deferred, 活人 pass) 三種死法哪種「最死」、木偶死是否
+        讀成「機器人」而非「死」—— 眼睛是感測器,headless 不可證。
+    P4 (instrument) 決定論: 本作有狀態(積分歷史),so the integrator
+        must STEP THE SCHEDULE —— 固定步長 dt=1/120,幀只負責追進度
+        (catch-up while loop),整數 τ 恰為每 120 步。兩 run 對
+        (act,I,C,J) 逐整數 τ 的 FNV hash 相同;n=181;零 JS 錯。
+        Falsifier: hash 不同 → 幀時序洩入狀態(007 pass-2 教訓的
+        積分器版)。
+
+  house laws inherited: 零旋鈕 / no-wall-clock(τ 只累積聽過的幀時)
+  / predictions-first / 決定論 xorshift(seed 0x2B, 每步耗用量恆定 ——
+  gains 走 ε 不走 0,程式路徑不分岔)/ first light 無聲。
+
+  RUN AMENDMENTS (2026-09-08 03:0x, in order):
+    Run 1: P4 過(181 / hash 同 / 零錯)。P1 與 P2 各死一半,同一具屍體:
+    J 耳原設計 = 頭節高頻殘差 / (|v̄|+4) —— 它聽的是「顫動對滑行比」,
+    不是噪聲層。兩個症狀:(a) NO-INTENT 幕蟲慢下來,分母縮小把 J 灌到
+    0.57(> FULL 的 0.24)—— 歸一化污染;(b) NO-STRUCTURE 幕身體散掉、
+    頭失去拖曳變滑,ΔJ=0.0817 恰越 0.08 —— J 透過「身體拖曳」通道偷聽
+    結構層。診斷:三層透過同一副身體耦合,把耳朵放在意圖注入點(頭)
+    等於同時聽到三層。修理(儀器,不遷就讀數):J 耳搬到尾節(離意圖
+    注入最遠、噪聲層的家)+ 固定歸一化 V0=12(分母不再隨幕縮放)。
+    修理後 NN 格的 J 判準取比例形(J_NN ≤ 0.5×J_FULL)—— 這隻耳本性
+    是相對的;P2 盲判準改相對形(|Δ| < 0.2×max)。教訓:**耳朵的正交
+    性不是免費的 —— layer-coupled 系統裡,儀器位置就是儀器設計。**
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>008 — three deaths</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0a0c;overflow:hidden}
+  canvas{display:block;width:100vw;height:100vh}
+  #hud{position:fixed;left:14px;bottom:12px;color:#8a8676;
+       font:10px/1.7 "IBM Plex Mono",ui-monospace,monospace;
+       user-select:none;pointer-events:none;white-space:pre}
+  #title{position:fixed;left:14px;top:12px;color:#6b675c;
+       font:10px/1.6 "IBM Plex Mono",ui-monospace,monospace;
+       user-select:none;pointer-events:none}
+  #title b{color:#a9a493;font-weight:400}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title"><b>008 — three deaths</b>
+一條蟲,三層機制:意圖、身體、噪聲。
+抽掉任何一層它都會死,但死法不同。
+活著不住在任何一層裡。</div>
+<div id="hud"></div>
+<script>
+"use strict";
+// ---------- constants ----------
+const N = 25;                  // nodes
+const L0 = 16;                 // spring rest length (css px)
+const DT = 1/120;              // fixed integrator step (s)
+const ACT_LEN = 45, CYCLE = 180, RAMP = 3;
+const EPS = 0.02;              // ablation gain (never 0: constant RNG use)
+const K_S = 28, K_I = 120, K_N = 140, K_C = 6, DAMP = 3.2;
+const SEED = 0x2B;
+const TS = new URLSearchParams(location.search).get("probe") ? 30 : 1;
+const PROBE = TS !== 1;
+// gains per act: [intent, structure, noise]
+const GAINS = [[1,1,1],[1,1,EPS],[1,EPS,1],[EPS,1,1]];
+const ACT_NAMES = ["full","no noise","no structure","no intent"];
+
+// ---------- deterministic rng ----------
+let rst = SEED>>>0;
+function rnd(){ rst^=rst<<13; rst>>>=0; rst^=rst>>17; rst^=rst<<5; rst>>>=0; return rst/4294967296; }
+
+// ---------- world ----------
+let W = innerWidth, H = innerHeight, CX = W/2, CY = H/2, MIN = Math.min(W,H);
+const cv = document.getElementById("c"), cx2 = cv.getContext("2d");
+function resize(){
+  W = innerWidth; H = innerHeight; CX = W/2; CY = H/2; MIN = Math.min(W,H);
+  cv.width = W*devicePixelRatio; cv.height = H*devicePixelRatio;
+  cx2.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+addEventListener("resize", resize); resize();
+
+// ---------- state ----------
+const x = new Float64Array(N), y = new Float64Array(N);
+const vx = new Float64Array(N), vy = new Float64Array(N);
+for (let i=0;i<N;i++){ x[i] = CX + (i-(N-1)/2)*L0; y[i] = CY; }
+let steps = 0;                 // integrator step count (the schedule)
+// gauges (EMA state — part of the deterministic state)
+let gI = 0, gC = 1, gJ = 0, vsx = 0, vsy = 0;
+
+// ---------- helpers ----------
+function smooth(p){ return p*p*(3-2*p); }
+function gainsAt(simT){
+  const u = ((simT % CYCLE) + CYCLE) % CYCLE;
+  const act = Math.floor(u/ACT_LEN);
+  const prev = (act+3)%4;
+  const p = Math.min(1, (u - act*ACT_LEN)/RAMP), q = smooth(p);
+  const a = GAINS[act], b = GAINS[prev];
+  return { act,
+    i: b[0]+(a[0]-b[0])*q, s: b[1]+(a[1]-b[1])*q, n: b[2]+(a[2]-b[2])*q };
+}
+function targetAt(simT){
+  return { tx: CX + 0.30*MIN*Math.sin(0.134*simT + 0.7),
+           ty: CY + 0.30*MIN*Math.sin(0.211*simT) };
+}
+
+// ---------- one fixed step ----------
+const ax = new Float64Array(N), ay = new Float64Array(N);
+function step(){
+  const simT = steps*DT;
+  const g = gainsAt(simT);
+  const { tx, ty } = targetAt(simT);
+  ax.fill(0); ay.fill(0);
+  // structure: chain springs
+  for (let i=0;i<N-1;i++){
+    const dx = x[i+1]-x[i], dy = y[i+1]-y[i];
+    const len = Math.hypot(dx,dy) || 1e-9;
+    const f = K_S*g.s*(len-L0)/len;
+    ax[i] += f*dx; ay[i] += f*dy;
+    ax[i+1] -= f*dx; ay[i+1] -= f*dy;
+  }
+  // intent: head chemotaxis
+  { const dx = tx-x[0], dy = ty-y[0];
+    const d = Math.hypot(dx,dy);
+    if (d > 1){ ax[0] += K_I*g.i*dx/d; ay[0] += K_I*g.i*dy/d; } }
+  // noise: every node, constant RNG consumption
+  for (let i=0;i<N;i++){
+    ax[i] += K_N*g.n*(rnd()*2-1);
+    ay[i] += K_N*g.n*(rnd()*2-1);
+  }
+  // containment (world, always on)
+  const RC = 0.38*MIN;
+  for (let i=0;i<N;i++){
+    const dx = x[i]-CX, dy = y[i]-CY, d = Math.hypot(dx,dy);
+    if (d > RC){ const f = K_C*(d-RC)/d; ax[i] -= f*dx; ay[i] -= f*dy; }
+  }
+  // integrate
+  const dmp = Math.max(0, 1-DAMP*DT);
+  for (let i=0;i<N;i++){
+    vx[i] = (vx[i]+ax[i]*DT)*dmp; vy[i] = (vy[i]+ay[i]*DT)*dmp;
+    x[i] += vx[i]*DT; y[i] += vy[i]*DT;
+  }
+  // ---- ears ----
+  // I: intent audibility
+  { const dx = tx-x[0], dy = ty-y[0], d = Math.hypot(dx,dy);
+    const sv = Math.hypot(vx[0],vy[0]);
+    const raw = (d > 1 && sv > 0.5) ? (vx[0]*dx+vy[0]*dy)/(sv*d) : 0;
+    gI += (raw-gI)*(DT/2.0); }
+  // C: body coherence
+  { let dev = 0;
+    for (let i=0;i<N-1;i++){
+      dev += Math.abs(Math.hypot(x[i+1]-x[i], y[i+1]-y[i]) - L0)/L0; }
+    const raw = 1 - Math.min(1, dev/(N-1));
+    gC += (raw-gC)*(DT/1.0); }
+  // J: noise audibility — TAIL node (farthest from the intent injection
+  // point; the noise layer's home), fixed normalization V0 (amendment:
+  // the head-ear heard wiggle-to-glide ratio, i.e. every layer at once)
+  { const T = N-1;
+    vsx += (vx[T]-vsx)*(DT/0.8); vsy += (vy[T]-vsy)*(DT/0.8);
+    const raw = Math.hypot(vx[T]-vsx, vy[T]-vsy) / 12;
+    gJ += (raw-gJ)*(DT/2.0); }
+  steps++;
+}
+
+// ---------- time (no wall clock; gaps dropped; STEP THE SCHEDULE) ----------
+let tau = 0, last = null, fps = 0, err = 0;
+window.addEventListener("error", ()=>{ err++; });
+
+// ---------- probe ----------
+const samples = [];
+let lastSample = -1;
+// birth row: the schedule is 0..180 (181 rows) — τ=0 is the birth state,
+// unreachable from the post-increment step loop, so it is recorded here.
+if (PROBE){ samples.push({ tau: 0, act: 0, I: 0, C: 1, J: 0 }); lastSample = 0; }
+function fnv(str){ let h=0x811c9dc5;
+  for (let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
+  return h>>>0; }
+window.__report = () => {
+  const q = samples.map(s=>`${s.act},${s.I.toFixed(4)},${s.C.toFixed(4)},${s.J.toFixed(4)}`).join(";");
+  return { n: samples.length, hash: fnv(q), samples, errors: err, fps: Math.round(fps) };
+};
+window.__done = false;
+
+// ---------- frame loop: frames only chase the schedule ----------
+function frame(t){
+  if (last !== null){
+    const dt = (t-last)/1000;
+    if (dt > 0 && dt < 0.25){ tau += dt*TS; fps = fps*0.95 + (1/dt)*0.05; }
+  }
+  last = t;
+
+  // catch-up: every scheduled step happens exactly once, stall or no stall
+  const targetSteps = Math.floor(tau/DT);
+  while (steps < targetSteps){
+    step();
+    if (steps % 120 === 0){
+      const sec = steps/120;
+      if (PROBE && sec > lastSample && sec <= CYCLE){
+        const g = gainsAt(sec - 1e-9);   // act at this integer tau (left-continuous)
+        samples.push({ tau: sec, act: g.act, I: gI, C: gC, J: gJ });
+        lastSample = sec;
+        if (sec === CYCLE) window.__done = true;
+      }
+    }
+  }
+
+  // ---- draw ----
+  const simT = steps*DT;
+  const g = gainsAt(simT);
+  cx2.fillStyle = "#0a0a0c"; cx2.fillRect(0,0,W,H);
+  // springs
+  cx2.strokeStyle = "#3a382f"; cx2.lineWidth = 1;
+  cx2.beginPath();
+  for (let i=0;i<N-1;i++){ cx2.moveTo(x[i],y[i]); cx2.lineTo(x[i+1],y[i+1]); }
+  cx2.stroke();
+  // nodes
+  cx2.fillStyle = "#d6d2c4";
+  for (let i=1;i<N;i++){ cx2.beginPath(); cx2.arc(x[i],y[i],2.2,0,7); cx2.fill(); }
+  // head (the nose)
+  cx2.fillStyle = "#e8b45a";
+  cx2.beginPath(); cx2.arc(x[0],y[0],3.6,0,7); cx2.fill();
+
+  // instrument (top right): three ears
+  const bx = W-158, by = 26, bw = 110, bh = 7, gap = 17;
+  cx2.font = "9px ui-monospace,monospace";
+  const ears = [["I",(gI+1)/2,true],["C",Math.max(0,Math.min(1,gC)),false],["J",Math.max(0,Math.min(1,gJ)),false]];
+  for (let k=0;k<3;k++){
+    const yy = by + k*gap;
+    cx2.fillStyle = "#55524a"; cx2.fillText(ears[k][0], bx-12, yy+bh-1);
+    cx2.strokeStyle = "#2c2b26"; cx2.strokeRect(bx, yy, bw, bh);
+    cx2.fillStyle = "#e8b45a";
+    cx2.fillRect(bx, yy, bw*ears[k][1], bh);
+    if (ears[k][2]){ cx2.fillStyle = "#8a8676"; cx2.fillRect(bx+bw/2-0.5, yy-2, 1, bh+4); }
+  }
+
+  document.getElementById("hud").textContent =
+    `act ${ACT_NAMES[g.act]}   gains i ${g.i.toFixed(2)} s ${g.s.toFixed(2)} n ${g.n.toFixed(2)}\n` +
+    `I ${gI>=0?"+":""}${gI.toFixed(3)}   C ${gC.toFixed(3)}   J ${gJ.toFixed(3)}   τ ${simT.toFixed(1)}s   fps ${Math.round(fps)}`;
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
