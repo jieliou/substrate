@@ -62,6 +62,93 @@
     修理後 NN 格的 J 判準取比例形(J_NN ≤ 0.5×J_FULL)—— 這隻耳本性
     是相對的;P2 盲判準改相對形(|Δ| < 0.2×max)。教訓:**耳朵的正交
     性不是免費的 —— layer-coupled 系統裡,儀器位置就是儀器設計。**
+
+  ──────────────────────────────────────────────────────────────────
+  PASS 2 — dying / 垂死 (2026-09-09 02:xx, bot session)
+    Change: RAMP 3 → 10。行刑從剪接變成過程 —— 每次過幕,一層的增益
+    用同一條 10s smooth ramp 送進 ε 或送回 1。probe 解析度 1s → 0.25s,
+    記錄延長到 τ=225(跨進第二輪 act 0,收 intent 重生的完整沉降)。
+
+    命題:行刑的速度是同一條 ramp,死亡的速度不是。每層死得多快,
+    由該層自己的記憶決定,不由行刑者決定 —— 噪聲無記憶(每步即擲),
+    它的死應貼著 ramp 走;彈簧有鬆弛時間、塵埃要散要聚,結構層的死
+    與生拖著自己的時間常數。死亡不是一個事件,是一條在儀表空間裡
+    有自己速度的路徑。
+
+    六個事件(ramp 中點 = T+5;lag = 儀表中點穿越 τ − ramp 中點;
+    中點穿越 = 首個朝新穩態方向連續 3 樣本越過 (m_old+m_new)/2):
+      E1 τ45  noise death      (J falls)   E2 τ90  noise rebirth    (J rises)
+      E3 τ90  structure death  (C falls)   E4 τ135 structure rebirth(C rises)
+      E5 τ135 intent death     (I falls)   E6 τ180 intent rebirth   (I rises)
+
+    PREDICTIONS (written before verify2.py, 2026-09-09 02:xx):
+      P5 (死速屬於層,不屬於行刑者) 六個 lag 不均勻:
+          max(lags) ≥ 2.5 × max(min(lags), 0.25s),且 min 屬於 J 事件
+          (無記憶層)、max 屬於 C 事件(最有狀態層)。
+          Falsifier: lags 均勻或順序反 → 死速由 ramp 決定,命題死。
+      P6 (聚回比散開慢) lag_E4 ≥ 1.5 × max(lag_E3, 0.25s);
+          噪聲對稱:|lag_E2 − lag_E1| ≤ 2s。
+          Falsifier: C 對稱或反向 → 散/聚不對稱是想像。
+      P7 (freed-head 貫穿垂死全程) 結構層垂死窗 [90,110] 內 I 的每個
+          樣本 ≥ 0.5 —— 身體的死從頭到尾沒有妨礙過頭的追逐。
+          Falsifier: I 掉入 < 0.5 → 存在頭被垂死身體拖累的過渡態。
+      P8 (instrument, P4 inherited) n=901(τ=0..225 每 0.25s)、兩 run
+          hash 同、零 JS 錯;P1/P2 於新穩態窗 [20,44] 全數重過(迴歸)。
+
+  RUN AMENDMENTS (pass 2, 2026-09-09 03:0x):
+    Run 1 (τ≤225): P7/P8 過(hash 同、n=901、P1/P2 迴歸全過、垂死全程
+    min I = 0.91)。P5/P6 的方向死了,但屍體比預測值錢:
+      lags: E1 +2.0  E2 +2.0  E3 +6.0  E4 −2.5  E5 +3.25  E6 −2.25
+    非均勻性大成立(24×),但 min 不是 J 事件 —— 是 E4 的**負** lag。
+    發現(取代 P5/P6 的錯誤想像):**有狀態的層死得晚、活得早**。
+    結構層抵抗行刑者是雙向的:垂死時撐過 ramp 中點(+6.0s —— 塵埃
+    靠噪聲隨機走散,√t 慢),重生時搶在中點前回來(−2.5s —— 彈簧
+    直接拉回,指數快;且 ~20% 的彈簧已撐得起 ~90% 的同調 —— 半死
+    的層幾乎全可聞,可聞度對增益飽和)。意圖層同款(+3.25/−2.25)。
+    噪聲層是唯一對稱的(2.0/2.0 = 純耳延遲):**無記憶 = 服從行刑者
+    的時鐘;有狀態 = 圍繞行刑者中點的時間不對稱。** 預測錯在把聚回
+    想成視覺(塵要從遠方收回);實際是物理(拉回快,走散慢)。
+    REVISED PREDICTIONS(held-out:第二輪 τ225..405 = 同物理的全新
+    噪聲實現;horizon 225 → 405,n=1621;written before re-run):
+      P5' (state = asymmetry) 每層 A = lag_death − lag_rebirth,於
+          cycle 2:A_C ≥ 4s、A_I ≥ 3s、|A_J| ≤ 2s。
+          Falsifier: 簽名不重現 → run 1 是噪聲實現的僥倖。
+      P6' (lag 是層的性質,不是實現的性質) 六事件 lag 在 cycle 1 vs
+          cycle 2 逐一相差 ≤ 1.5s。
+          Falsifier: 任一漂移 > 1.5s → lag 屬於實現,不屬於層。
+
+    Run 2 (held-out, τ≤405): C 層簽名重現(A_C 7.75 vs 8.5;drift
+    E3 0.25 / E4 1.0)、J 對稱穩定(drift 0.25/0.25)—— 但 E5 漂移
+    6.25s,P5'/P6' 死於 I 事件。驗屍:NI 穩態 I 中位數 c1 0.031 vs
+    c2 0.198,兩者都在 ±0.25 盲帶內 —— **死掉的意圖層沒有錨定值**。
+    C/J 的死態有物理錨(偏差飽和/噪聲振幅 ε);I 的死態是無恢復力
+    的方向遊蕩,EMA 過的中位數是實現的性質。對無錨端點量 midpoint-
+    crossing = 量噪聲實現,不是量層。第三個發現:**屍體不會替你
+    靜止 —— 有的層死成一個點,有的層死成一片遊蕩。**
+    INSTRUMENT REPAIR #2(修儀器,不遷就讀數 —— run-1 J 耳同族:
+    參考點就是儀器設計):I 事件的死端錨改用設計值 0(盲帶中心,
+    P1 的 NI 格自己就是這樣定義死的),閾值 = m_live/2(活端仍用
+    實測穩態)。C/J 事件不動(它們的兩端都有錨,且已重現)。
+    REVISED (written before re-run #2):
+      P5'' cycle 2 上 A_C ≥ 4s、A_I ≥ 3s、|A_J| ≤ 2s(I 用修後儀器)。
+      P6'' 六事件 lag 跨 cycle 漂移逐一 ≤ 1.5s(I 用修後儀器)。
+      Falsifier: I 修錨後仍漂 > 1.5s → 不是錨的問題,是 intent 層的
+      死速真的屬於實現 —— 那也是答案,如實記錄。
+
+    Run 3 (repaired anchor, held-out): E5 仍漂 6.25s(c1 +3.5 /
+    c2 −2.75)—— 錨修好了,漂移沒走。落入 pre-registered falsifier
+    的第二分支,如實記錄:**intent 層的死速屬於實現,不屬於層。**
+    驗屍(第四個發現,本 pass 最深的一個):C 的死是 24 根彈簧的
+    系綜平均、J 是 25 節的系綜平均 —— 自平均,所以死速是層的性質;
+    I 只有一顆頭對一個目標 —— 單自由度,無平均,死的快慢由行刑
+    當下的境遇決定(目標剛好在哪、噪聲剛好往哪踢)。**有的層死於
+    統計,有的層死於境遇;死於境遇的層沒有「死速」這種性質 ——
+    它每次死都是敘事,不是統計量。**(P1 的 NI 格用 ±0.25 盲帶
+    早就說了這件事:意圖的死態只能用範圍定義,不能用值。)
+    FINAL PREDICTIONS (P5f/P6f, written before final run):
+      P5f 自平均層的簽名:A_C ≥ 4s 兩輪皆成立;|A_J| ≤ 2s 兩輪皆成立。
+      P6f E1-E4(自平均事件)跨輪漂移 ≤ 1.5s;E5/E6 的 lag 以資料
+          形式報告,不設 gate —— 它們的變異數本身就是發現。
 -->
 <html lang="zh-Hant">
 <head>
@@ -92,7 +179,7 @@
 const N = 25;                  // nodes
 const L0 = 16;                 // spring rest length (css px)
 const DT = 1/120;              // fixed integrator step (s)
-const ACT_LEN = 45, CYCLE = 180, RAMP = 3;
+const ACT_LEN = 45, CYCLE = 180, RAMP = 10, HORIZON = 405;
 const EPS = 0.02;              // ablation gain (never 0: constant RNG use)
 const K_S = 28, K_I = 120, K_N = 140, K_C = 6, DAMP = 3.2;
 const SEED = 0x2B;
@@ -205,8 +292,10 @@ window.addEventListener("error", ()=>{ err++; });
 // ---------- probe ----------
 const samples = [];
 let lastSample = -1;
-// birth row: the schedule is 0..180 (181 rows) — τ=0 is the birth state,
-// unreachable from the post-increment step loop, so it is recorded here.
+// birth row: the schedule is 0..405 every 0.25s (1621 rows) — τ=0 is the
+// birth state, unreachable from the post-increment step loop; recorded here.
+// (horizon covers TWO full cycles + the third cycle's settled FULL window:
+//  cycle 2 is a fresh noise realization of the same physics = held-out set.)
 if (PROBE){ samples.push({ tau: 0, act: 0, I: 0, C: 1, J: 0 }); lastSample = 0; }
 function fnv(str){ let h=0x811c9dc5;
   for (let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
@@ -229,13 +318,13 @@ function frame(t){
   const targetSteps = Math.floor(tau/DT);
   while (steps < targetSteps){
     step();
-    if (steps % 120 === 0){
-      const sec = steps/120;
-      if (PROBE && sec > lastSample && sec <= CYCLE){
-        const g = gainsAt(sec - 1e-9);   // act at this integer tau (left-continuous)
+    if (steps % 30 === 0){
+      const sec = steps/120;   // quarter-second grid (exact in binary)
+      if (PROBE && sec > lastSample && sec <= HORIZON){
+        const g = gainsAt(sec - 1e-9);   // act at this tau (left-continuous)
         samples.push({ tau: sec, act: g.act, I: gI, C: gC, J: gJ });
         lastSample = sec;
-        if (sec === CYCLE) window.__done = true;
+        if (sec === HORIZON) window.__done = true;
       }
     }
   }

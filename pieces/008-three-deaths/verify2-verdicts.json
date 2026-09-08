@@ -1,0 +1,127 @@
+{
+  "verdicts": {
+    "P5f_selfavg_asymmetry_both_cycles": {
+      "asymmetry": {
+        "c1": {
+          "C": 8.5,
+          "I": 5.75,
+          "J": 0.0
+        },
+        "c2": {
+          "C": 7.75,
+          "I": -1.75,
+          "J": 0.5
+        }
+      },
+      "I_note": "reported, not gated \u2014 circumstantial death",
+      "lags": {
+        "c1_E1_noise_death": 2.0,
+        "c1_E2_noise_rebirth": 2.0,
+        "c1_E3_structure_death": 6.0,
+        "c1_E4_structure_rebirth": -2.5,
+        "c1_E5_intent_death": 3.5,
+        "c1_E6_intent_rebirth": -2.25,
+        "c2_E1_noise_death": 2.25,
+        "c2_E2_noise_rebirth": 1.75,
+        "c2_E3_structure_death": 6.25,
+        "c2_E4_structure_rebirth": -1.5,
+        "c2_E5_intent_death": -2.75,
+        "c2_E6_intent_rebirth": -1.0
+      },
+      "pass": true
+    },
+    "P6f_lag_is_layer_property_selfavg": {
+      "cross_cycle_drift": {
+        "E1_noise_death": 0.25,
+        "E2_noise_rebirth": 0.25,
+        "E3_structure_death": 0.25,
+        "E4_structure_rebirth": 1.0,
+        "E5_intent_death": 6.25,
+        "E6_intent_rebirth": 1.25
+      },
+      "gated_events": [
+        "E1_noise_death",
+        "E2_noise_rebirth",
+        "E3_structure_death",
+        "E4_structure_rebirth"
+      ],
+      "I_drift_as_data": {
+        "E5_intent_death": 6.25,
+        "E6_intent_rebirth": 1.25
+      },
+      "pass": true
+    },
+    "P7_freed_head_through_dying": {
+      "min_I_c1": 0.9113,
+      "min_I_c2": 0.8358,
+      "pass": true
+    },
+    "P8_instrument": {
+      "n1": 1621,
+      "n2": 1621,
+      "hash1": 588763779,
+      "hash2": 588763779,
+      "errors": 0,
+      "fps": 84,
+      "P1_regression": {
+        "FULL": true,
+        "NO_NOISE": true,
+        "NO_STRUCTURE": true,
+        "NO_INTENT": true
+      },
+      "P2_regression": {
+        "I_blind_FULL_vs_NN": true,
+        "C_blind_FULL_vs_NI": true,
+        "J_blind_FULL_vs_NS": true
+      },
+      "steady_medians": {
+        "FULL": {
+          "I": 0.8679,
+          "C": 0.956,
+          "J": 0.2741
+        },
+        "NN": {
+          "I": 0.8822,
+          "C": 0.9768,
+          "J": 0.0055
+        },
+        "NS": {
+          "I": 0.9504,
+          "C": 0.4339,
+          "J": 0.2473
+        },
+        "NI": {
+          "I": 0.031,
+          "C": 0.9725,
+          "J": 0.2582
+        },
+        "FULL2": {
+          "I": 0.8716,
+          "C": 0.9534,
+          "J": 0.2716
+        },
+        "NN2": {
+          "I": 0.9502,
+          "C": 0.9753,
+          "J": 0.0058
+        },
+        "NS2": {
+          "I": 0.9652,
+          "C": 0.4509,
+          "J": 0.271
+        },
+        "NI2": {
+          "I": 0.198,
+          "C": 0.9718,
+          "J": 0.2701
+        },
+        "FULL3": {
+          "I": 0.8653,
+          "C": 0.9558,
+          "J": 0.278
+        }
+      },
+      "pass": true
+    }
+  }
+}
