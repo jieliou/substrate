@@ -149,6 +149,53 @@
       P5f 自平均層的簽名:A_C ≥ 4s 兩輪皆成立;|A_J| ≤ 2s 兩輪皆成立。
       P6f E1-E4(自平均事件)跨輪漂移 ≤ 1.5s;E5/E6 的 lag 以資料
           形式報告,不設 gate —— 它們的變異數本身就是發現。
+
+  ──────────────────────────────────────────────────────────────────
+  PASS 3 — the gallery of deaths / 境遇死的統計 (2026-09-10 03:xx, bot session)
+    Change: probe-only seed 埠(?seed=k,僅 probe 模式讀取;預設 0x2B
+    不變 —— 作品本體零旋鈕不破,seed 是儀器的門,不是作品的門)。
+    12 個世界(seed 1..12)× 每世界 2 輪 = 24 次獨立的意圖之死。
+
+    命題:pass 2 判了「境遇死沒有死速」—— 單一敘事不可測。但敘事
+    的畫廊可測:單隻蟲沒有的系綜,由它死過的所有世界湊成。變異數
+    不是量測失敗,是境遇死這個物種的正身 —— 統計死的層在畫廊裡
+    仍是一個窄峰,境遇死的層在畫廊裡是一片散布。
+
+    PREDICTIONS (written before verify3.py, 2026-09-10 03:xx):
+      P9 (畫廊簽名) 24 實現上:sd(E5) ≥ 2.5 × sd(E3),且自平均事件
+          E1-E4 各自 sd ≤ 1.5s —— 散布本身分層,跟中位數分層一樣硬。
+          Falsifier: E5 散布與 E3 同量級 → 「境遇死」是 2 樣本的僥倖。
+      P10 (敘事的系綜自平均) 偶數世界均值 vs 奇數世界均值,
+          |Δmean(E5)| ≤ 1.5s —— 畫廊夠大時,境遇死的均值是統計量。
+          Falsifier: 兩半不合 → 分布野(重尾/多峰),連系綜都馴不住它。
+      P11 (境遇跨零,統計不跨) E5 的 24 個 lag 橫跨零(min < 0 < max
+          —— 境遇可以搶在行刑者中點前殺死意圖,也可以拖很久);
+          E3 的 24 個 lag 全為正(塵埃散開是 √t 隨機走,沒有早死)。
+          Falsifier: E5 全同號 → run 3 的負 lag 是孤例;E3 出現負值
+          → 結構死也有境遇成分,自平均不是全部。
+      P12 (instrument) seed 7 重跑 hash 相同(敘事是確定的 —— 變異
+          住在世界之間,不住在世界之內;境遇 ≠ 隨機);12 世界 hash
+          兩兩相異(seed 埠真的通到物理);每 run n=1621、零 JS 錯。
+          Falsifier: 同 seed 異 hash → 幀時序洩入;異 seed 同 hash
+          → 埠沒接上,量的是同一個世界的 12 份拷貝。
+
+  RUN AMENDMENTS (pass 3, 2026-09-10 03:5x):
+    ALL FOUR PASS — 本作第一次預測全數存活(pass 1 死一半、pass 2
+    死了兩代)。畫廊讀數(24 死/事件):
+      sd: E1 0.36 E2 0.64 E3 0.25 E4 0.62 | E5 3.01 | E6 1.07
+      E5 span [−2.75, +4.25] 跨零;E3 span [5.5, 6.5] 全正。
+      12 世界 hash 兩兩相異;seed 7 重跑 hash 同。
+    兩個沒被預測到的讀數,比預測值錢:
+    (1) **畫廊均值 ≈ 0**(mean E5 = −0.042s,偶/奇半 Δ0.29):境遇
+        死平均起來恰好落在行刑者中點 —— 早死與晚死一樣多。pass 2
+        的「有狀態 = 死得晚活得早」是**系綜內**的性質(24 根彈簧
+        合力抵抗行刑者);單自由度的意圖層在**世界系綜**裡對行刑者
+        沒有淨抵抗 —— 境遇對稱,均值歸零。統計死的層抵抗時鐘,
+        境遇死的層平均服從時鐘,只是每一次都不服從。
+    (2) **重生比死亡馴**(sd E6 1.07,介於統計層與境遇層之間):
+        重生的活端有錨(追逐重新咬合 = 恢復力存在),死亡的死端
+        無錨(方向遊蕩)—— 同一層的兩個方向,境遇度不同。境遇度
+        不是層的常數,是「該狀態有沒有恢復力」的函數。
 -->
 <html lang="zh-Hant">
 <head>
@@ -182,9 +229,12 @@ const DT = 1/120;              // fixed integrator step (s)
 const ACT_LEN = 45, CYCLE = 180, RAMP = 10, HORIZON = 405;
 const EPS = 0.02;              // ablation gain (never 0: constant RNG use)
 const K_S = 28, K_I = 120, K_N = 140, K_C = 6, DAMP = 3.2;
-const SEED = 0x2B;
-const TS = new URLSearchParams(location.search).get("probe") ? 30 : 1;
+const QS = new URLSearchParams(location.search);
+const TS = QS.get("probe") ? 30 : 1;
 const PROBE = TS !== 1;
+// pass 3: probe-only seed port (the instrument's door, not the piece's —
+// default world 0x2B untouched, zero-knob law holds for the artwork itself)
+const SEED = (PROBE && QS.get("seed")) ? (parseInt(QS.get("seed"), 10) >>> 0) : 0x2B;
 // gains per act: [intent, structure, noise]
 const GAINS = [[1,1,1],[1,1,EPS],[1,EPS,1],[EPS,1,1]];
 const ACT_NAMES = ["full","no noise","no structure","no intent"];
