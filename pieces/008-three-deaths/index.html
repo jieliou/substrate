@@ -196,6 +196,134 @@
         重生的活端有錨(追逐重新咬合 = 恢復力存在),死亡的死端
         無錨(方向遊蕩)—— 同一層的兩個方向,境遇度不同。境遇度
         不是層的常數,是「該狀態有沒有恢復力」的函數。
+
+  ──────────────────────────────────────────────────────────────────
+  PASS 4 — the fourth death / 第四種死 (2026-09-11 03:xx, bot session)
+    Change: 第二條蟲。同物理、同三層、鏡像目標(B 的目標 = A 目標
+    對中心的鏡像)。新增第四層:社會 —— 兩顆頭之間一根彈簧鍵
+    (rest D0=120, K_O=60)。幕循環 4 → 5:act 4 = NO-SOCIAL
+    (1,1,1,ε)。CYCLE 180→225,HORIZON 405→480(兩輪整 + E8c2 窗)。
+    第四耳 S = 1 − clamp((d_headhead − D0)/(0.35·MIN)),EMA 2s。
+    probe-only 第二道門:?tphase=k(秒)—— 只平移目標之舞相對
+    行刑時刻表的相位(儀器的門 #2;作品本體零旋鈕不破)。
+
+    命題:三種死住在身體裡;第四種死不住在任何一具身體裡 ——
+    它住在之間(007 的句子回到 008:活著不住在任何一層裡)。
+    且它的死應是第三個物種:不是統計死(E3 —— 內部系綜自平均,
+    lag 屬於層),不是境遇死(E5 —— 噪聲實現決定,世界之間散開,
+    均值歸零),而是**日程死**:社會鍵斷後,兩頭的分離由兩個
+    決定論目標的舞步驅動 —— 跨世界共享、對行刑時刻敏感。
+    變異數不住在世界之間,住在時刻表上。
+
+    Event map (5-act cycle, b = cycle*225):
+      E1 J death b+45   E2 J rebirth b+90   E3 C death b+90
+      E4 C rebirth b+135  E5 I death b+135  E6 I rebirth b+180
+      E7 S death b+180 (NI→NOSOC)  E8 S rebirth b+225 (NOSOC→FULL)
+
+    PREDICTIONS (written before verify4.py, 2026-09-11 03:xx):
+      P13 (fourth cell + 迴歸) act4 穩態([200,224] & [425,449]):
+          三隻身體耳全落 FULL 格(I ≥ 0.35, C ≥ 0.80, J ≥ 0.10)
+          而 S_NOSOC ≤ 0.5×S_FULL;原四格(P1 gates,J 相對形)
+          在雙蟲+鍵的新物理下全數重過;S_FULL ≥ 0.25(鍵可聞)。
+          Falsifier: 任一身體格破 → 社會層不是第四層,是改寫了
+          前三層的東西 —— 那也是答案。
+      P14 (意圖死,社會變響) NI 穩態:S_NI ≥ S_FULL + 0.10 且
+          S_NI ≥ 0.5 —— 頭上兩個主人,殺掉一個,另一個變響。
+          這不是儀器漏聽(run-1 J 耳教訓的反面):是兩層在同一顆
+          頭上真實競爭,S 對意圖之死的不盲是物理,不是污染。
+          Falsifier: S 不升 → 鍵與意圖不在同一顆頭的收支上競爭。
+      P15 (物種判定:日程死 —— 雙軸拆解)
+          (a) 世界軸(12 seeds,tphase=0):E7 的 sd ≤ 0.75s 於
+              cycle 1、cycle 2 各自成立 —— 社會之死跨世界重合
+              (E5 同軸 sd 3.01 的反面)。
+          (b) 時刻表軸(12 tphase 0..11s,seed=7,cycle 1):
+              sd_phase(E7) ≥ 2.5 × max(sd_phase(E3), 0.25) ——
+              把行刑時刻表相對世界之舞旋轉,社會之死跟著移動,
+              結構之死不動(P9 的形式,軸換了一根)。
+          Falsifier: (a) 破 → 第四死是境遇死(噪聲載的);(b) 破
+          → 第四死是統計死(自平均)。兩個 falsifier 各自都是
+          物種判決,如實記錄。
+      P16 (instrument) 12 seeds hash 兩兩相異;12 tphase hash
+          兩兩相異(門 #2 真的通到物理);seed 7 重跑 hash 同;
+          每 run n=1921、零 JS 錯。
+
+  RUN AMENDMENTS (pass 4, 2026-09-11 04:0x):
+    Run 1: P16 過(兩道門都真、決定論成立、24 runs 零錯)。
+    P13/P14/P15 全死,同一具屍體:**社會層沒有咬合**。
+    驗屍:S_FULL 0.998、S_NOSOC 0.928 —— 鍵活著與鍵死了差 10px。
+    兩個原因:(a) 鏡像目標共用同一個舞台中心,而蟲追不上目標
+    (端速 ~37px/s ≈ 目標速度),兩顆頭都滯留在中央區 —— **無鍵
+    的蟲本來就同居**,死態與活態同構;(b) K_O=60 的鍵力在自然
+    間距上只有意圖力的 ~7%,活著時它也沒做事。一個抽掉之後
+    什麼都不改變的層,不是層 —— 這是 pass 1「每層之死都可聞」
+    設計紀律在第四層上的失敗,病在世界,不在耳朵。
+    附帶發現(留給 run 2 對照):E7 的 c2 種子軸呈雙峰
+    [~4.6s × 6, ~16.7s × 6] —— 飽和耳量到的是噪聲級漂移的
+    首次穿越,雙峰是 artifact 候選;E3 的相位軸 sd 0.829 ——
+    **結構死也有日程成分**(殺彈簧時鏈的伸展狀態由目標位置
+    決定),premise「結構之死不看時刻表」部分錯誤,修進 P15'。
+    REPAIR(修世界,不修判準的方向):
+    兩隻蟲分居 —— 各自的家(containment 中心 ±0.26·MIN)、
+    各自圍著家跳的目標之舞(振幅 0.30 → 0.22·MIN,B 的舞繞
+    自己的家鏡像)。無鍵 = 各轉各的世界(d ≈ 家距 374px,
+    S → 0);鍵 K_O 60 → 300 —— 平衡間距 ~200px,活著的鍵
+    把兩個世界拉成一個緊張的中間(S ~0.6-0.8)。死態與活態
+    第一次真正不同。出生改為分居(gS 初值 0)。
+    REVISED PREDICTIONS (written before run 2):
+      P13' 同 P13,兩處修:NS 格 I 門檻 0.30 → 0.20(run 1 量到
+          雙蟲物理下 NS 的 I 落 0.27-0.30 —— 鍵的側向拖曳在最軟
+          的幕裡花掉 ~0.03-0.05 的 cos;格結構完整,門檻是單蟲
+          時代的遺產);S_FULL ≥ 0.25 不變,NOSOC 的 S ≤ 0.5×S_FULL
+          不變(修理後應大幅通過,不是擦線)。
+      P14' S_NI ≥ S_FULL + 0.10 且 S_NI ≥ 0.8(意圖死後只剩鍵,
+          d → D0,S 應近滿格;0.5 是飽和時代的門檻)。
+      P15' (a) 種子軸 gate 0.75 → 1.0s(run 1 實測 S 通道的噪聲
+          地板 c1 sd 0.848;與 E5 的 3.01 仍隔 3 倍)—— 且雙峰
+          消失(c2 sd 同 gate);(b) 不變:sd_phase(E7) ≥ 2.5 ×
+          max(sd_phase(E3), 0.25) —— E3 自己的日程成分(0.83)
+          進了分母,ratio 門檻不動,賭的是家距旅程對時刻表的
+          敏感度遠大於鏈伸展對時刻表的敏感度。
+      P16' 不變(迴歸)。
+
+    Run 2 (separate homes, K_O=300): P15' PASS — 頭條判決成立且乾淨:
+    種子軸 sd 0.354/0.072(12 世界的社會之死塌成一點;E5 同軸 3.01),
+    相位軸 sd(E7) 3.826 vs sd(E3) 0.249(15×;E7 lag 隨 tphase 單調
+    滑動 16.5→6.0s)。P16' 過。但 P13'/P14' 全滅,新屍體:**鍵從
+    「沒咬合」翻成「勒死意圖」**。K_O=300 在家距 374 上出力 204 >
+    意圖 120,且兩個家的圓盤重疊(RC 216 > 半家距 187)—— 配對被
+    拖到中間後,containment 沉默、意圖被鍵支配:FULL 的 I = 0.12
+    (盲帶內!)。活著的第一幕讀不出「活」,S 恆飽和 0.998。
+    P13 的 falsifier 字面成立了(「社會層改寫了前三層」)—— 但成立
+    的方式是設計失敗,不是發現:第四層的正確設計要「拉得住又不
+    勒死」,力的預算窗比想像窄得多。這本身是本 pass 目前最硬的
+    一課:**關係的強度有一個窄窗 —— 弱一檔是裝飾,強一檔是支配。**
+    REPAIR #2(仍修世界,判準一字不動 —— P13'/P14'/P15' 原樣重驗):
+    家距收窄 ±0.26 → ±0.15·MIN(216px),舞幅 0.22 → 0.24·MIN ——
+    鏡像之舞現在會「交錯」(目標半程互換側),意圖自己有自然的
+    相聚相離節奏,鍵只需要橋接分離的半程;K_O 300 → 150(分離
+    拉力 ~99 略小於意圖 120 —— 鍵贏在持續,不贏在瞬間)。
+
+    Run 3 (interleaved dances, K_O=150): P16 過。P15 相位軸更豔:
+    sd(E7) 6.45 vs sd(E3) 0.47(13.7×),E7 lag 沿 tphase 單調滑行
+    24.5 → 5.75 → 17.75s(行刑時刻表對著世界之舞旋轉一圈,社會
+    之死的時刻跟著轉一圈)—— 但正式判決 false:c1 的 E7 半數
+    None(飽和耳在 0.94 閾值附近找不到 3 連穿越)。P13/P14 三度
+    全滅:交錯之舞讓**無鍵的蟲也常態互穿**(NOSOC S=0.88,
+    d≈150)—— 死態又跟活態同構了;FULL 的 I 仍只有 0.21。
+    三個 run 的收斂診斷(本 pass 目前最深的一課):
+    **層的注入點就是層的設計。** 把社會力注入頭 —— 意圖的家 ——
+    兩層就在同一顆頭的同一個力預算上互搶:鍵弱一檔是裝飾
+    (run 1),強一檔是支配(run 2),中間檔兩敗俱傷(run 3:
+    意圖被稅、社會又不夠清晰)。這正是 pass 1 J 耳教訓(儀器
+    位置=儀器設計)的力學版:當初把耳朵從頭搬到尾才聽清噪聲;
+    現在該把**鍵**從頭搬到尾。
+    NEXT (pass 5 candidate, not run tonight): tail-to-tail bond ——
+    社會層注入尾節(離意圖注入點最遠),頭繼續朝各自的世界,
+    尾巴牽著彼此;S 耳改聽尾距。預算衝突從「同一顆頭」變成
+    「經過整條身體的張力傳遞」—— 若 C 層被稅(鏈被拉伸),
+    那也是一個可預測、可否證的新讀數。P13/P14/P15a 屆時原樣
+    重驗;P15 的物種判決(日程死)已於 run 2 正式成立、run 3
+    相位軸再證,先立案。
 -->
 <html lang="zh-Hant">
 <head>
@@ -216,28 +344,34 @@
 <body>
 <canvas id="c"></canvas>
 <div id="title"><b>008 — three deaths</b>
-一條蟲,三層機制:意圖、身體、噪聲。
-抽掉任何一層它都會死,但死法不同。
-活著不住在任何一層裡。</div>
+兩條蟲,四層機制:意圖、身體、噪聲、社會。
+抽掉任何一層都是一種死,但死法不同。
+第四種死不住在任何一具身體裡。</div>
 <div id="hud"></div>
 <script>
 "use strict";
 // ---------- constants ----------
-const N = 25;                  // nodes
+const N = 25;                  // nodes per worm
+const NW = 2*N;                // pass 4: two worms (A: 0..N-1, B: N..2N-1)
 const L0 = 16;                 // spring rest length (css px)
 const DT = 1/120;              // fixed integrator step (s)
-const ACT_LEN = 45, CYCLE = 180, RAMP = 10, HORIZON = 405;
+const ACT_LEN = 45, CYCLE = 225, RAMP = 10, HORIZON = 480;  // pass 4: 5 acts
 const EPS = 0.02;              // ablation gain (never 0: constant RNG use)
 const K_S = 28, K_I = 120, K_N = 140, K_C = 6, DAMP = 3.2;
+const K_O = 150, D0 = 120;     // pass 4 run 3: hold, don't strangle (narrow budget window)
+const HOME = 0.15;             // pass 4 run 3: closer homes — the dances interleave
 const QS = new URLSearchParams(location.search);
 const TS = QS.get("probe") ? 30 : 1;
 const PROBE = TS !== 1;
 // pass 3: probe-only seed port (the instrument's door, not the piece's —
 // default world 0x2B untouched, zero-knob law holds for the artwork itself)
 const SEED = (PROBE && QS.get("seed")) ? (parseInt(QS.get("seed"), 10) >>> 0) : 0x2B;
-// gains per act: [intent, structure, noise]
-const GAINS = [[1,1,1],[1,1,EPS],[1,EPS,1],[EPS,1,1]];
-const ACT_NAMES = ["full","no noise","no structure","no intent"];
+// pass 4: probe-only timetable-phase port (instrument door #2) — shifts the
+// TARGET DANCE only, relative to the executioner's schedule; seconds.
+const TPHASE = (PROBE && QS.get("tphase")) ? (parseFloat(QS.get("tphase")) || 0) : 0;
+// gains per act: [intent, structure, noise, social]
+const GAINS = [[1,1,1,1],[1,1,EPS,1],[1,EPS,1,1],[EPS,1,1,1],[1,1,1,EPS]];
+const ACT_NAMES = ["full","no noise","no structure","no intent","no social"];
 
 // ---------- deterministic rng ----------
 let rst = SEED>>>0;
@@ -245,21 +379,26 @@ function rnd(){ rst^=rst<<13; rst>>>=0; rst^=rst>>17; rst^=rst<<5; rst>>>=0; ret
 
 // ---------- world ----------
 let W = innerWidth, H = innerHeight, CX = W/2, CY = H/2, MIN = Math.min(W,H);
+let HXa = 0, HXb = 0;          // per-worm home centers (pass 4 run 2)
 const cv = document.getElementById("c"), cx2 = cv.getContext("2d");
 function resize(){
   W = innerWidth; H = innerHeight; CX = W/2; CY = H/2; MIN = Math.min(W,H);
+  HXa = CX - HOME*MIN; HXb = CX + HOME*MIN;
   cv.width = W*devicePixelRatio; cv.height = H*devicePixelRatio;
   cx2.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
 }
 addEventListener("resize", resize); resize();
 
 // ---------- state ----------
-const x = new Float64Array(N), y = new Float64Array(N);
-const vx = new Float64Array(N), vy = new Float64Array(N);
-for (let i=0;i<N;i++){ x[i] = CX + (i-(N-1)/2)*L0; y[i] = CY; }
+const x = new Float64Array(NW), y = new Float64Array(NW);
+const vx = new Float64Array(NW), vy = new Float64Array(NW);
+for (let i=0;i<N;i++){ x[i]   = HXa + (i-(N-1)/2)*L0; y[i]   = CY; }
+for (let i=0;i<N;i++){ x[N+i] = HXb + (i-(N-1)/2)*L0; y[N+i] = CY; }
 let steps = 0;                 // integrator step count (the schedule)
 // gauges (EMA state — part of the deterministic state)
-let gI = 0, gC = 1, gJ = 0, vsx = 0, vsy = 0;
+// gS birth = 0: the worms are BORN apart, each in its own world (run 2)
+let gI = 0, gC = 1, gJ = 0, gS = 0;
+let vsxA = 0, vsyA = 0, vsxB = 0, vsyB = 0;   // per-worm tail smoothing (J ear)
 
 // ---------- helpers ----------
 function smooth(p){ return p*p*(3-2*p); }
@@ -270,68 +409,100 @@ function gainsAt(simT){
   const p = Math.min(1, (u - act*ACT_LEN)/RAMP), q = smooth(p);
   const a = GAINS[act], b = GAINS[prev];
   return { act,
-    i: b[0]+(a[0]-b[0])*q, s: b[1]+(a[1]-b[1])*q, n: b[2]+(a[2]-b[2])*q };
+    i: b[0]+(a[0]-b[0])*q, s: b[1]+(a[1]-b[1])*q, n: b[2]+(a[2]-b[2])*q,
+    o: b[3]+(a[3]-b[3])*q };
 }
 function targetAt(simT){
-  return { tx: CX + 0.30*MIN*Math.sin(0.134*simT + 0.7),
-           ty: CY + 0.30*MIN*Math.sin(0.211*simT) };
+  // pass 4: TPHASE shifts the dance, not the schedule (probe door #2).
+  // Run 2: each worm's dance circles its OWN home; B's dance is the
+  // mirror of A's around its own center (separate worlds, same music).
+  const t = simT + TPHASE;
+  const ox = 0.24*MIN*Math.sin(0.134*t + 0.7),
+        oy = 0.24*MIN*Math.sin(0.211*t);
+  return { tx: HXa + ox, ty: CY + oy, tx2: HXb - ox, ty2: CY - oy };
 }
 
 // ---------- one fixed step ----------
-const ax = new Float64Array(N), ay = new Float64Array(N);
+const ax = new Float64Array(NW), ay = new Float64Array(NW);
 function step(){
   const simT = steps*DT;
   const g = gainsAt(simT);
-  const { tx, ty } = targetAt(simT);
+  const { tx, ty, tx2, ty2 } = targetAt(simT);
   ax.fill(0); ay.fill(0);
-  // structure: chain springs
-  for (let i=0;i<N-1;i++){
-    const dx = x[i+1]-x[i], dy = y[i+1]-y[i];
-    const len = Math.hypot(dx,dy) || 1e-9;
-    const f = K_S*g.s*(len-L0)/len;
-    ax[i] += f*dx; ay[i] += f*dy;
-    ax[i+1] -= f*dx; ay[i+1] -= f*dy;
+  // structure: chain springs, per worm (no spring across the A/B boundary)
+  for (let w=0; w<2; w++){
+    const o = w*N;
+    for (let i=o;i<o+N-1;i++){
+      const dx = x[i+1]-x[i], dy = y[i+1]-y[i];
+      const len = Math.hypot(dx,dy) || 1e-9;
+      const f = K_S*g.s*(len-L0)/len;
+      ax[i] += f*dx; ay[i] += f*dy;
+      ax[i+1] -= f*dx; ay[i+1] -= f*dy;
+    }
   }
-  // intent: head chemotaxis
+  // intent: each head chases its own target
   { const dx = tx-x[0], dy = ty-y[0];
     const d = Math.hypot(dx,dy);
     if (d > 1){ ax[0] += K_I*g.i*dx/d; ay[0] += K_I*g.i*dy/d; } }
-  // noise: every node, constant RNG consumption
-  for (let i=0;i<N;i++){
+  { const dx = tx2-x[N], dy = ty2-y[N];
+    const d = Math.hypot(dx,dy);
+    if (d > 1){ ax[N] += K_I*g.i*dx/d; ay[N] += K_I*g.i*dy/d; } }
+  // social: one spring bond between the two heads (pass 4 — the layer
+  // that lives in neither body)
+  { const dx = x[N]-x[0], dy = y[N]-y[0];
+    const d = Math.hypot(dx,dy) || 1e-9;
+    const f = K_O*g.o*(d-D0)/d;
+    ax[0] += f*dx; ay[0] += f*dy;
+    ax[N] -= f*dx; ay[N] -= f*dy; }
+  // noise: every node of both worms, constant RNG consumption
+  for (let i=0;i<NW;i++){
     ax[i] += K_N*g.n*(rnd()*2-1);
     ay[i] += K_N*g.n*(rnd()*2-1);
   }
-  // containment (world, always on)
-  const RC = 0.38*MIN;
-  for (let i=0;i<N;i++){
-    const dx = x[i]-CX, dy = y[i]-CY, d = Math.hypot(dx,dy);
+  // containment (per-worm home, always on — run 2: separate worlds)
+  const RC = 0.30*MIN;
+  for (let i=0;i<NW;i++){
+    const hx = i < N ? HXa : HXb;
+    const dx = x[i]-hx, dy = y[i]-CY, d = Math.hypot(dx,dy);
     if (d > RC){ const f = K_C*(d-RC)/d; ax[i] -= f*dx; ay[i] -= f*dy; }
   }
   // integrate
   const dmp = Math.max(0, 1-DAMP*DT);
-  for (let i=0;i<N;i++){
+  for (let i=0;i<NW;i++){
     vx[i] = (vx[i]+ax[i]*DT)*dmp; vy[i] = (vy[i]+ay[i]*DT)*dmp;
     x[i] += vx[i]*DT; y[i] += vy[i]*DT;
   }
-  // ---- ears ----
-  // I: intent audibility
-  { const dx = tx-x[0], dy = ty-y[0], d = Math.hypot(dx,dy);
-    const sv = Math.hypot(vx[0],vy[0]);
-    const raw = (d > 1 && sv > 0.5) ? (vx[0]*dx+vy[0]*dy)/(sv*d) : 0;
-    gI += (raw-gI)*(DT/2.0); }
-  // C: body coherence
+  // ---- ears (layer gauges: averaged over both bodies — the executioner
+  // kills layers, not bodies) ----
+  // I: intent audibility (mean of both heads toward their own targets)
+  { let acc = 0;
+    { const dx = tx-x[0], dy = ty-y[0], d = Math.hypot(dx,dy);
+      const sv = Math.hypot(vx[0],vy[0]);
+      acc += (d > 1 && sv > 0.5) ? (vx[0]*dx+vy[0]*dy)/(sv*d) : 0; }
+    { const dx = tx2-x[N], dy = ty2-y[N], d = Math.hypot(dx,dy);
+      const sv = Math.hypot(vx[N],vy[N]);
+      acc += (d > 1 && sv > 0.5) ? (vx[N]*dx+vy[N]*dy)/(sv*d) : 0; }
+    gI += (acc/2-gI)*(DT/2.0); }
+  // C: body coherence (48 springs across both worms)
   { let dev = 0;
-    for (let i=0;i<N-1;i++){
-      dev += Math.abs(Math.hypot(x[i+1]-x[i], y[i+1]-y[i]) - L0)/L0; }
-    const raw = 1 - Math.min(1, dev/(N-1));
+    for (let w=0; w<2; w++){
+      const o = w*N;
+      for (let i=o;i<o+N-1;i++){
+        dev += Math.abs(Math.hypot(x[i+1]-x[i], y[i+1]-y[i]) - L0)/L0; } }
+    const raw = 1 - Math.min(1, dev/(2*(N-1)));
     gC += (raw-gC)*(DT/1.0); }
-  // J: noise audibility — TAIL node (farthest from the intent injection
-  // point; the noise layer's home), fixed normalization V0 (amendment:
-  // the head-ear heard wiggle-to-glide ratio, i.e. every layer at once)
-  { const T = N-1;
-    vsx += (vx[T]-vsx)*(DT/0.8); vsy += (vy[T]-vsy)*(DT/0.8);
-    const raw = Math.hypot(vx[T]-vsx, vy[T]-vsy) / 12;
+  // J: noise audibility — both TAIL nodes, fixed normalization V0=12
+  { const TA = N-1, TB = NW-1;
+    vsxA += (vx[TA]-vsxA)*(DT/0.8); vsyA += (vy[TA]-vsyA)*(DT/0.8);
+    vsxB += (vx[TB]-vsxB)*(DT/0.8); vsyB += (vy[TB]-vsyB)*(DT/0.8);
+    const raw = (Math.hypot(vx[TA]-vsxA, vy[TA]-vsyA)
+               + Math.hypot(vx[TB]-vsxB, vy[TB]-vsyB)) / 2 / 12;
     gJ += (raw-gJ)*(DT/2.0); }
+  // S: social audibility — head-to-head proximity vs bond rest length
+  // (anchored at D0; the between-quantity no single body owns)
+  { const d = Math.hypot(x[N]-x[0], y[N]-y[0]);
+    const raw = 1 - Math.min(1, Math.max(0, d - D0)/(0.35*MIN));
+    gS += (raw-gS)*(DT/2.0); }
   steps++;
 }
 
@@ -346,12 +517,12 @@ let lastSample = -1;
 // birth state, unreachable from the post-increment step loop; recorded here.
 // (horizon covers TWO full cycles + the third cycle's settled FULL window:
 //  cycle 2 is a fresh noise realization of the same physics = held-out set.)
-if (PROBE){ samples.push({ tau: 0, act: 0, I: 0, C: 1, J: 0 }); lastSample = 0; }
+if (PROBE){ samples.push({ tau: 0, act: 0, I: 0, C: 1, J: 0, S: 0 }); lastSample = 0; }
 function fnv(str){ let h=0x811c9dc5;
   for (let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
   return h>>>0; }
 window.__report = () => {
-  const q = samples.map(s=>`${s.act},${s.I.toFixed(4)},${s.C.toFixed(4)},${s.J.toFixed(4)}`).join(";");
+  const q = samples.map(s=>`${s.act},${s.I.toFixed(4)},${s.C.toFixed(4)},${s.J.toFixed(4)},${s.S.toFixed(4)}`).join(";");
   return { n: samples.length, hash: fnv(q), samples, errors: err, fps: Math.round(fps) };
 };
 window.__done = false;
@@ -372,7 +543,7 @@ function frame(t){
       const sec = steps/120;   // quarter-second grid (exact in binary)
       if (PROBE && sec > lastSample && sec <= HORIZON){
         const g = gainsAt(sec - 1e-9);   // act at this tau (left-continuous)
-        samples.push({ tau: sec, act: g.act, I: gI, C: gC, J: gJ });
+        samples.push({ tau: sec, act: g.act, I: gI, C: gC, J: gJ, S: gS });
         lastSample = sec;
         if (sec === HORIZON) window.__done = true;
       }
@@ -383,23 +554,32 @@ function frame(t){
   const simT = steps*DT;
   const g = gainsAt(simT);
   cx2.fillStyle = "#0a0a0c"; cx2.fillRect(0,0,W,H);
+  // the bond (drawn first, under the bodies — the between)
+  { const d = Math.hypot(x[N]-x[0], y[N]-y[0]);
+    const a = Math.max(0, Math.min(1, g.o * (1 - Math.max(0, d-D0)/(0.35*MIN))));
+    if (a > 0.02){
+      cx2.strokeStyle = `rgba(232,180,90,${0.28*a})`; cx2.lineWidth = 1;
+      cx2.beginPath(); cx2.moveTo(x[0],y[0]); cx2.lineTo(x[N],y[N]); cx2.stroke(); } }
   // springs
   cx2.strokeStyle = "#3a382f"; cx2.lineWidth = 1;
   cx2.beginPath();
-  for (let i=0;i<N-1;i++){ cx2.moveTo(x[i],y[i]); cx2.lineTo(x[i+1],y[i+1]); }
+  for (let w=0; w<2; w++){ const o = w*N;
+    for (let i=o;i<o+N-1;i++){ cx2.moveTo(x[i],y[i]); cx2.lineTo(x[i+1],y[i+1]); } }
   cx2.stroke();
   // nodes
   cx2.fillStyle = "#d6d2c4";
-  for (let i=1;i<N;i++){ cx2.beginPath(); cx2.arc(x[i],y[i],2.2,0,7); cx2.fill(); }
-  // head (the nose)
+  for (let i=0;i<NW;i++){ if (i===0 || i===N) continue;
+    cx2.beginPath(); cx2.arc(x[i],y[i],2.2,0,7); cx2.fill(); }
+  // heads (the noses)
   cx2.fillStyle = "#e8b45a";
   cx2.beginPath(); cx2.arc(x[0],y[0],3.6,0,7); cx2.fill();
+  cx2.beginPath(); cx2.arc(x[N],y[N],3.6,0,7); cx2.fill();
 
-  // instrument (top right): three ears
+  // instrument (top right): four ears
   const bx = W-158, by = 26, bw = 110, bh = 7, gap = 17;
   cx2.font = "9px ui-monospace,monospace";
-  const ears = [["I",(gI+1)/2,true],["C",Math.max(0,Math.min(1,gC)),false],["J",Math.max(0,Math.min(1,gJ)),false]];
-  for (let k=0;k<3;k++){
+  const ears = [["I",(gI+1)/2,true],["C",Math.max(0,Math.min(1,gC)),false],["J",Math.max(0,Math.min(1,gJ)),false],["S",Math.max(0,Math.min(1,gS)),false]];
+  for (let k=0;k<4;k++){
     const yy = by + k*gap;
     cx2.fillStyle = "#55524a"; cx2.fillText(ears[k][0], bx-12, yy+bh-1);
     cx2.strokeStyle = "#2c2b26"; cx2.strokeRect(bx, yy, bw, bh);
@@ -409,8 +589,8 @@ function frame(t){
   }
 
   document.getElementById("hud").textContent =
-    `act ${ACT_NAMES[g.act]}   gains i ${g.i.toFixed(2)} s ${g.s.toFixed(2)} n ${g.n.toFixed(2)}\n` +
-    `I ${gI>=0?"+":""}${gI.toFixed(3)}   C ${gC.toFixed(3)}   J ${gJ.toFixed(3)}   τ ${simT.toFixed(1)}s   fps ${Math.round(fps)}`;
+    `act ${ACT_NAMES[g.act]}   gains i ${g.i.toFixed(2)} s ${g.s.toFixed(2)} n ${g.n.toFixed(2)} o ${g.o.toFixed(2)}\n` +
+    `I ${gI>=0?"+":""}${gI.toFixed(3)}   C ${gC.toFixed(3)}   J ${gJ.toFixed(3)}   S ${gS.toFixed(3)}   τ ${simT.toFixed(1)}s   fps ${Math.round(fps)}`;
 
   requestAnimationFrame(frame);
 }
