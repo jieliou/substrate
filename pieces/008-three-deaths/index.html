@@ -524,6 +524,94 @@
     findings (differential imprint, species-by-injection-point)
     both live in the readings, not the verdicts. The gate is a
     contract, not a courtroom win.
+
+    PASS 7 (2026-09-14 01:xx) — the source of the residue.
+    Pass 6 left F_NOSOC at a weak, cycle-variable residue (0.048 c1
+    / 0.150 c2 across worlds; seed 7 alone 0.375): the force channel
+    quiets 3-9x at the cut but not to zero. Two named suspects for
+    what still correlates two UNBONDED tails in the slow band:
+      (i)  chain-drag common mode — both heads still chase their
+           (mirrored) target dance to the SAME clock; that shared
+           clock reaches the tails down each chain. Bond gone, clock
+           shared.
+      (ii) containment orbit — both tails ride identical-stiffness
+           home enclosures at a similar characteristic rate; a
+           shared geometry, not a shared drive.
+    Falsifier (probe door #3, ?freeze=1): pin worm B's head at its
+    home (HXb,CY) and stop its chase — B loses the dance, keeps its
+    body, noise, and enclosure. RNG draw per node unchanged (the pin
+    is post-integrate, after the noise loop); the artwork's zero-knob
+    default (freeze off) is untouched.
+    P24a (the freeze is live): FULL I under freeze <= 0.6x the
+        unfrozen FULL I median — worm A chases alone, B's head is a
+        dead anchor. Falsifier: I unchanged => the pin did nothing.
+    P24b (residue source, the discriminator): on the higher-residue
+        cycle (c2), the drop fraction D = (F_NOSOC_free0 -
+        F_NOSOC_free1)/F_NOSOC_free0 —
+          D >= 0.5 reads CHAIN-DRAG (the residue was the shared
+                   clock; freeze one head and half+ of it dies),
+          D <= 0.2 reads ENCLOSURE (the residue survives the freeze;
+                   it was never head-driven),
+          0.2 < D < 0.5 = honest gray, reported unforced.
+        Measured within-world (same 12 seeds, freeze off then on).
+    P24c (bond-coupling control, data not gate): F in a bonded act
+        couples the tails DIRECTLY, not through the heads — freeze
+        should barely dent it. Reported as F_FULL_free1 vs free0.
+    P24d (instrument): frozen seed-7 repeat hash equal; 12 frozen
+        worlds distinct hashes; unfrozen seed-7 repeat hash equal
+        (default physics still deterministic); n=1921; zero errors.
+    If chain-drag: the imprint is even cleaner than pass 6 read —
+    force forgets COMPLETELY, and the 0.15 was two corpses still
+    dancing to one clock, not bond memory. If enclosure: the 0.15
+    is a shared-cage artifact to subtract, and true bond-forgetting
+    is F_NOSOC minus that floor.
+
+    RUN AMENDMENT (pass 7, 2026-09-14 01:5x) — PASS 7 CLOSES: the
+    residue is ENCLOSURE, and the falsifier fired AGAINST the head.
+    ALL gated PASS (P24a/P24b/P24d); P24c control clean.
+    P24a PASS: FULL I 0.852 -> 0.432 under freeze (ratio 0.507 —
+    almost exactly half). Worm A chases alone, B's head is a dead
+    anchor: the pin is live and surgical.
+    P24b VERDICT = ENCLOSURE, and stronger than the band asked: the
+    drop fraction is NEGATIVE both cycles — c1 0.0477 -> 0.0633
+    (D -0.33), c2 0.1504 -> 0.1749 (D -0.16). Freezing one head did
+    not kill the residue; it slightly GREW it. Seed 7 is the crispest
+    single world: NOSOC F 0.3753 -> 0.3746 (flat to four figures)
+    while its I halves 0.872 -> 0.428. ⭐ The chain-drag common-mode
+    hypothesis is REFUTED: the post-cut correlation is not the shared
+    dance clock reaching the tails down the chains. It is head-
+    independent — a containment/shared-substrate floor.
+    Why freeze GROWS it (the mechanism the negative sign reveals):
+    the two heads chase MIRRORED dances (anti-phase targets), so the
+    head-driven tail motion is partly anti-correlated — it DILUTES
+    the cage floor (adds opposed variance to the denominator, and the
+    max(0,.) clamp discards the anti-phase part). Remove one head and
+    the opposition is gone; the pure shared-cage mode shows through.
+    ⭐⭐ Life was HIDING the room: two chasing worms look less
+    force-correlated than one half-frozen pair, because the chase adds
+    anti-phase motion that masks the shared enclosure.
+    P24c PASS (control, the load-bearing one): FULL F 0.374 -> 0.385
+    (drop -0.03, flat). The bond couples the tails DIRECTLY, so
+    freezing a head barely dents bonded-act F — proof the freeze does
+    not globally kill the channel. That is exactly why NOSOC F
+    surviving the freeze MEANS something: the knife is specific.
+    P24d PASS: unfrozen seed-7 repeat hash equal (default physics
+    still deterministic), frozen seed-7 repeat hash equal (the freeze
+    is deterministic too), 12 distinct frozen hashes, freeze changes
+    all 12, n=1921, zero errors.
+    LEDGER: P24 ALL PASS — ⭐ the imprint is cleaner than pass 6 read.
+    Force does not forget "to a residue"; it forgets COMPLETELY. The
+    0.05-0.17 that survives the cut is the ROOM, not the relationship
+    — a cage floor two identical bodies share whether or not they
+    ever held hands. Geometry keeps a ghost (S 0.99, the held
+    distance by viscosity); force keeps none. Two clocks at one
+    address, and the second clock reads zero once you subtract the
+    shared cage. Honest scope: freeze proves head-INDEPENDENT; it
+    does not separate containment-orbit from identical-body-spectra
+    (both are head-independent). A pass-8 falsifier could move B's
+    enclosure to decorrelate the cages — but the higher-priority next
+    step stays the live-viewer pass (P3: is the imprint visible; do
+    the three species read as three deaths to an eye).
 -->
 <html lang="zh-Hant">
 <head>
@@ -569,6 +657,11 @@ const SEED = (PROBE && QS.get("seed")) ? (parseInt(QS.get("seed"), 10) >>> 0) : 
 // pass 4: probe-only timetable-phase port (instrument door #2) — shifts the
 // TARGET DANCE only, relative to the executioner's schedule; seconds.
 const TPHASE = (PROBE && QS.get("tphase")) ? (parseFloat(QS.get("tphase")) || 0) : 0;
+// pass 7: probe-only freeze port (instrument door #3) — pins worm B's head
+// at its home and stops its chase, to test whether the post-cut F residue is
+// chain-drag common-mode (dies when a head is frozen) or a containment-orbit
+// artifact (survives). Default off — the artwork's zero-knob law holds.
+const FREEZE = !!(PROBE && QS.get("freeze"));
 // gains per act: [intent, structure, noise, social]
 const GAINS = [[1,1,1,1],[1,1,EPS,1],[1,EPS,1,1],[EPS,1,1,1],[1,1,1,EPS]];
 const ACT_NAMES = ["full","no noise","no structure","no intent","no social"];
@@ -645,7 +738,7 @@ function step(){
   { const dx = tx-x[0], dy = ty-y[0];
     const d = Math.hypot(dx,dy);
     if (d > 1){ ax[0] += K_I*g.i*dx/d; ay[0] += K_I*g.i*dy/d; } }
-  { const dx = tx2-x[N], dy = ty2-y[N];
+  if (!FREEZE) { const dx = tx2-x[N], dy = ty2-y[N];
     const d = Math.hypot(dx,dy);
     if (d > 1){ ax[N] += K_I*g.i*dx/d; ay[N] += K_I*g.i*dy/d; } }
   // social: one spring bond between the two TAILS (pass 5 — injection
@@ -675,6 +768,9 @@ function step(){
     vx[i] = (vx[i]+ax[i]*DT)*dmp; vy[i] = (vy[i]+ay[i]*DT)*dmp;
     x[i] += vx[i]*DT; y[i] += vy[i]*DT;
   }
+  // pass 7: freeze pins worm B's head as a dead anchor (post-integrate, so
+  // the noise loop's RNG draw for node N still happened — path invariant).
+  if (FREEZE){ x[N]=HXb; y[N]=CY; vx[N]=0; vy[N]=0; }
   // ---- ears (layer gauges: averaged over both bodies — the executioner
   // kills layers, not bodies) ----
   // I: intent audibility (mean of both heads toward their own targets)

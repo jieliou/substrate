@@ -1,0 +1,132 @@
+{
+  "verdicts": {
+    "P24a_freeze_is_live": {
+      "FULL_I_free0": 0.8524,
+      "FULL_I_free1": 0.4318,
+      "ratio": 0.507,
+      "pass": true
+    },
+    "P24b_residue_source": {
+      "NOSOC_c1_F": [
+        0.0477,
+        0.0633
+      ],
+      "drop_c1": -0.327,
+      "NOSOC_c2_F": [
+        0.1504,
+        0.1749
+      ],
+      "drop_c2": -0.163,
+      "primary_cycle": "c2",
+      "primary_drop": -0.163,
+      "verdict": "enclosure",
+      "verdict_c1": "enclosure",
+      "verdict_c2": "enclosure",
+      "pass": true
+    },
+    "P24c_bond_coupling_control": {
+      "FULL_F_free0": 0.3743,
+      "FULL_F_free1": 0.3852,
+      "drop": -0.029,
+      "note": "bond couples tails directly; freeze should barely dent bonded-act F",
+      "pass": true
+    },
+    "P24d_instrument": {
+      "unfrozen_repeat_match": true,
+      "frozen_repeat_match": true,
+      "distinct_frozen_hashes": 12,
+      "freeze_changes_all": true,
+      "n_ok": true,
+      "zero_errors": true,
+      "pass": true
+    }
+  },
+  "steady_seed7_free0": {
+    "FULL": {
+      "I": 0.8558,
+      "C": 0.9541,
+      "J": 0.2838,
+      "S": 0.9983,
+      "F": 0.1013
+    },
+    "NI": {
+      "I": 0.0918,
+      "C": 0.9727,
+      "J": 0.2819,
+      "S": 0.9984,
+      "F": 0.3276
+    },
+    "NOSOC": {
+      "I": 0.8721,
+      "C": 0.9552,
+      "J": 0.2627,
+      "S": 0.9931,
+      "F": 0.3753
+    },
+    "FULL2": {
+      "I": 0.8867,
+      "C": 0.9535,
+      "J": 0.2633,
+      "S": 0.9987,
+      "F": 0.5199
+    },
+    "NI2": {
+      "I": -0.0036,
+      "C": 0.9728,
+      "J": 0.2744,
+      "S": 0.9984,
+      "F": 0.1853
+    },
+    "NOSOC2": {
+      "I": 0.852,
+      "C": 0.9544,
+      "J": 0.2665,
+      "S": 0.9883,
+      "F": 0.0369
+    }
+  },
+  "steady_seed7_free1": {
+    "FULL": {
+      "I": 0.4214,
+      "C": 0.9642,
+      "J": 0.2834,
+      "S": 0.9983,
+      "F": 0.0919
+    },
+    "NI": {
+      "I": 0.046,
+      "C": 0.9729,
+      "J": 0.282,
+      "S": 0.9984,
+      "F": 0.3099
+    },
+    "NOSOC": {
+      "I": 0.4284,
+      "C": 0.9647,
+      "J": 0.2644,
+      "S": 0.9928,
+      "F": 0.3746
+    },
+    "FULL2": {
+      "I": 0.4444,
+      "C": 0.9634,
+      "J": 0.2644,
+      "S": 0.9987,
+      "F": 0.5186
+    },
+    "NI2": {
+      "I": -0.036,
+      "C": 0.9729,
+      "J": 0.2715,
+      "S": 0.9985,
+      "F": 0.1335
+    },
+    "NOSOC2": {
+      "I": 0.4297,
+      "C": 0.9637,
+      "J": 0.2758,
+      "S": 0.9885,
+      "F": 0
+    }
+  }
+}
