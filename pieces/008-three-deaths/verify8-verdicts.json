@@ -1,0 +1,64 @@
+{
+  "verdicts": {
+    "P25_offline_ear_validation": {
+      "median_abs_diff": 0.0047,
+      "max_abs_diff": 0.041,
+      "gate": "median<=0.05 and max<=0.15",
+      "pass": true
+    },
+    "P26_phantom_pair": {
+      "R_real_c2": 0.1506,
+      "R_phantom_c2": 0.0,
+      "ratio": 0.0,
+      "verdict": "room",
+      "R_real_c1": 0.0317,
+      "R_phantom_c1": 0.0083,
+      "phantom_FULL_median": 0.0041,
+      "real_c2_all": [
+        0.2998,
+        0.1782,
+        0.0523,
+        0.1785,
+        0.0,
+        0.266,
+        0.0077,
+        0.1754,
+        0.2715,
+        0.0979,
+        0.0617,
+        0.1258
+      ],
+      "phantom_c2_all": [
+        0.1496,
+        0.0,
+        0.0,
+        0.0821,
+        0.0,
+        0.0481,
+        0.0,
+        0.196,
+        0.0,
+        0.0,
+        0.1841,
+        0.0
+      ],
+      "pass": true
+    },
+    "P27_seed7_anomaly": {
+      "seed7_real_NOSOC2_F_insim": 0.0369,
+      "A7_with_strangers_median": 0.0101,
+      "B7_with_strangers_median": 0.0985,
+      "population_phantom_median": 0.0,
+      "verdict": "loud-body",
+      "pass": true
+    },
+    "P28_instrument_no_touch": {
+      "repeat_match": true,
+      "distinct_hashes": 12,
+      "n_ok": true,
+      "zero_errors": true,
+      "pass7_steady_medians_reproduced": true,
+      "pass": true
+    }
+  }
+}

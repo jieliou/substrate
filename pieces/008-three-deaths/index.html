@@ -612,6 +612,60 @@
     enclosure to decorrelate the cages — but the higher-priority next
     step stays the live-viewer pass (P3: is the imprint visible; do
     the three species read as three deaths to an eye).
+
+    PASS 8 (2026-09-20 pre-dawn) — the phantom pair: does the room
+    exist at all? Pass 7 proved the post-cut residue (NOSOC F
+    0.05-0.17, seed 7 at 0.375) is head-independent — "the room, not
+    the relationship". Two suspects remain, both head-independent:
+      (i)  a PHYSICAL room — shared containment geometry really
+           couples the two bodies through space they co-occupy;
+      (ii) NO room at all — two identical bodies breathe in the same
+           slow band, and a clamped finite-window correlation of two
+           same-band signals rectifies to a positive floor. The
+           "room" would be a statistical artifact of the bodies'
+           MAKE, not of shared space.
+    The discriminator needs no new physics: a CONTROL PAIR that never
+    shared anything. Pair worm A's tail from world k with worm B's
+    tail from world j≠k — same make, same schedule, zero shared
+    space, zero shared noise. If the phantom pair correlates like the
+    real pair, the room was never there.
+    WORLD CHANGES: NONE. Probe export only — samples gain the
+    smoothed tail velocities (va, vb) the F ear already computes;
+    the hash string is UNCHANGED (act,I,C,J,S,F), so pass-7 physics
+    must reproduce to the digit (P28 regression).
+    PREDICTIONS (P25-P28, written before verify8.py):
+    P25 (offline ear validation): recomputing F from exported va/vb
+        (same EMA recursion, dt=0.25s) reproduces the in-sim gF —
+        per-world |Δmedian| over the four NOSOC/NOSOC2 windows:
+        median ≤ 0.05, max ≤ 0.15. Falsifier: offline estimator
+        invalid → phantom comparison void, recorded, pass aborts.
+    P26 (the phantom pair, the discriminator; P23-style agnostic —
+        registered as a question with thresholds, not a bet): on the
+        higher-residue cycle (NOSOC2), R_real = median of 12 real-
+        pair F medians, R_phantom = median of 12 phantom-pair F
+        medians (A of seed k × B of seed k%12+1, offline estimator
+        both sides for symmetry):
+          R_phantom ≥ 0.5·R_real  → SPECTRUM (the room is the make
+                     of the bodies; pass 7's "cage floor" is the
+                     instrument's clamp rectifying same-band noise),
+          R_phantom ≤ 0.2·R_real  → ROOM (a physical in-world
+                     channel survives the control; displacing the
+                     cage becomes a real question),
+          between → honest gray, reported unforced.
+    P27 (the seed-7 anomaly): seed 7's residue (0.375) is 2.5× the
+        population. Phantom pairs built from seed 7's HALVES (A7 ×
+        each B_j, B7 × each A_j, j≠7): if both directions' phantom
+        medians stay ≤ 1.5× the population phantom median, the
+        anomaly needs BOTH halves of world 7 (a joint realization —
+        consistent with SPECTRUM read); if either half stays loud
+        with strangers, one body's slow band is simply strong (a
+        loud body — consistent with ROOM being partly per-body).
+        Two-outcome discriminator, reported either way.
+    P28 (instrument, no-touch proof): repeat seed-7 hash equal; 12
+        distinct world hashes; n=1921; zero errors; AND seed-7
+        unfrozen steady medians (5 ears × 6 windows) equal pass 7's
+        stored steady_seed7_free0 to 4 decimals — the export added
+        nothing to the physics.
 -->
 <html lang="zh-Hant">
 <head>
@@ -825,7 +879,9 @@ let lastSample = -1;
 // birth state, unreachable from the post-increment step loop; recorded here.
 // (horizon covers TWO full cycles + the third cycle's settled FULL window:
 //  cycle 2 is a fresh noise realization of the same physics = held-out set.)
-if (PROBE){ samples.push({ tau: 0, act: 0, I: 0, C: 1, J: 0, S: 0, F: 0 }); lastSample = 0; }
+// pass 8: probe rows also export the smoothed tail velocities (va, vb) the
+// F ear computes — export only; the hash string below is UNCHANGED.
+if (PROBE){ samples.push({ tau: 0, act: 0, I: 0, C: 1, J: 0, S: 0, F: 0, va: [0,0], vb: [0,0] }); lastSample = 0; }
 function fnv(str){ let h=0x811c9dc5;
   for (let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
   return h>>>0; }
@@ -851,7 +907,8 @@ function frame(t){
       const sec = steps/120;   // quarter-second grid (exact in binary)
       if (PROBE && sec > lastSample && sec <= HORIZON){
         const g = gainsAt(sec - 1e-9);   // act at this tau (left-continuous)
-        samples.push({ tau: sec, act: g.act, I: gI, C: gC, J: gJ, S: gS, F: gF });
+        samples.push({ tau: sec, act: g.act, I: gI, C: gC, J: gJ, S: gS, F: gF,
+                       va: [vsxA, vsyA], vb: [vsxB, vsyB] });
         lastSample = sec;
         if (sec === HORIZON) window.__done = true;
       }
