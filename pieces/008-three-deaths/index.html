@@ -666,6 +666,69 @@
         unfrozen steady medians (5 ears × 6 windows) equal pass 7's
         stored steady_seed7_free0 to 4 decimals — the export added
         nothing to the physics.
+
+    ------------------------------------------------------------------
+    pass 9 — the die and the leash (probe doors #4 and #5)
+    Pass 8 left two suspects for the real in-world channel (phantom
+    F 0.0 vs real 0.1506): the shared containment geometry, or the
+    SHARED RNG STREAM. Preparing this pass exposed a THIRD suspect
+    hiding in a comment since pass 4: EPS = 0.02 means the NOSOC act
+    never actually cuts the bond — K_O*EPS = 3 of spring stiffness
+    connects the two TAILS (the very nodes the F ear listens to)
+    through every "no social" window. Every prior finding fits it:
+    head-independent (the leash ties tails, not heads), in-world,
+    absent in phantom pairs (strangers share no spring), and freeze-
+    GROWTH (pass 7's mechanism — head-drive dilutes a tail-borne
+    correlation — applies to a weak spring exactly as to a cage).
+    Mechanism note, pre-registered: a spring TRANSMITS slow-band
+    drift (positive correlation, the F band); the anti-correlated
+    relative mode lives at the spring resonance, above the smoother.
+    So pass 9 tries BOTH named suspects in one sitting, each behind
+    its own probe door, world untouched by default:
+      door #4  ?rng=split — worm B rolls its OWN die (second
+               xorshift32 state derived via splitmix32(SEED); worm A
+               keeps the house stream; both consume 50 draws/step so
+               the path stays invariant within each mode),
+      door #5  ?cut=1    — the NOSOC act's social gain becomes a
+               true 0 instead of EPS (the leash is actually taken
+               off; RNG consumption unaffected — the noise loop
+               draws regardless of gains).
+    Conditions run: split / cut / split+cut × 12 worlds, plus one
+    default seed-7 run for the no-touch regression. Baseline
+    R_default = 0.1506 (verify8 P26 offline real_c2_all, reused).
+    PREDICTIONS (P29-P33, written before verify9.py):
+    P29 (instrument): default seed-7 steady medians equal pass 7's
+        stored values to 4 decimals (world untouched); per door:
+        seed-7 repeat hash equal (deterministic), door hash differs
+        from default hash (the door reaches physics), 12 world
+        hashes pairwise distinct per condition; n=1921, zero errors.
+    P30 (the leash, door #5 alone): R_cut = median over 12 worlds of
+        offline NOSOC2 F medians.
+          R_cut <= 0.2*R_default → LEASH — the "post-cut residue"
+                   of passes 6-8 was never post-cut; the room is
+                   the bond's stump, and "the room" dissolves into
+                   an incomplete ablation (recorded as the piece's
+                   third sign reversal),
+          R_cut >= 0.5*R_default → leash exonerated (stiffness 3
+                   too weak in the slow band),
+          between → partial channel, reported unforced.
+    P31 (the die, door #4 alone): same thresholds with R_split:
+          <= 0.2 → DICE — two bodies rolling one die was the
+                   channel; xorshift32's linear structure survives
+                   the EMA smoother,
+          >= 0.5 → dice exonerated,
+          between → partial.
+    P32 (closure, both doors): if exactly one of P30/P31 collapsed,
+        expect R_splitcut ≈ that door's value (consistency); if
+        NEITHER collapsed alone but both together do → stacked
+        channels; if R_splitcut >= 0.5*R_default → both named
+        suspects are dead AND the phantom verdict must be re-read
+        honestly (what in-world thing is left that strangers lack?).
+    P33 (seed-7 under the collapsing door): report seed-7's NOSOC
+        and NOSOC2 F under each door; if its loudness (B7 with
+        strangers 0.0985, pass 8) collapses under the same door as
+        the population, the loud body was that channel's loudest
+        realization; if it survives, per-world structure remains.
 -->
 <html lang="zh-Hant">
 <head>
@@ -716,13 +779,24 @@ const TPHASE = (PROBE && QS.get("tphase")) ? (parseFloat(QS.get("tphase")) || 0)
 // chain-drag common-mode (dies when a head is frozen) or a containment-orbit
 // artifact (survives). Default off — the artwork's zero-knob law holds.
 const FREEZE = !!(PROBE && QS.get("freeze"));
+// pass 9: probe doors #4 and #5 — the die and the leash. Default off:
+// the artwork's zero-knob law holds, the default world is bit-identical.
+const RNGSPLIT = (PROBE && QS.get("rng") === "split");   // worm B rolls its own die
+const SOCCUT   = !!(PROBE && QS.get("cut"));             // NOSOC truly cuts the bond
 // gains per act: [intent, structure, noise, social]
-const GAINS = [[1,1,1,1],[1,1,EPS,1],[1,EPS,1,1],[EPS,1,1,1],[1,1,1,EPS]];
+const GAINS = [[1,1,1,1],[1,1,EPS,1],[1,EPS,1,1],[EPS,1,1,1],[1,1,1,SOCCUT?0:EPS]];
 const ACT_NAMES = ["full","no noise","no structure","no intent","no social"];
 
 // ---------- deterministic rng ----------
 let rst = SEED>>>0;
 function rnd(){ rst^=rst<<13; rst>>>=0; rst^=rst>>17; rst^=rst<<5; rst>>>=0; return rst/4294967296; }
+// pass 9 door #4: worm B's own die — a second xorshift32 state derived from
+// SEED via splitmix32 (a different algebra, so the two states share no cheap
+// linear relation). Guard: xorshift32's fixed point is 0.
+function splitmix32(a){ a|=0; a=a+0x9E3779B9|0; let t=a^a>>>16; t=Math.imul(t,0x21F0AAAD);
+  t=t^t>>>15; t=Math.imul(t,0x735A2D97); return ((t^t>>>15)>>>0)||0x6B79D0E5; }
+let rstB = RNGSPLIT ? splitmix32(SEED) : 0;
+function rndB(){ rstB^=rstB<<13; rstB>>>=0; rstB^=rstB>>17; rstB^=rstB<<5; rstB>>>=0; return rstB/4294967296; }
 
 // ---------- world ----------
 let W = innerWidth, H = innerHeight, CX = W/2, CY = H/2, MIN = Math.min(W,H);
@@ -805,9 +879,12 @@ function step(){
     ax[TA] += f*dx; ay[TA] += f*dy;
     ax[TB] -= f*dx; ay[TB] -= f*dy; }
   // noise: every node of both worms, constant RNG consumption
+  // (pass 9 door #4: in split mode worm B draws from its own stream —
+  // 50 draws/step per stream, path invariant within each mode)
   for (let i=0;i<NW;i++){
-    ax[i] += K_N*g.n*(rnd()*2-1);
-    ay[i] += K_N*g.n*(rnd()*2-1);
+    const r = (RNGSPLIT && i >= N) ? rndB : rnd;
+    ax[i] += K_N*g.n*(r()*2-1);
+    ay[i] += K_N*g.n*(r()*2-1);
   }
   // containment (per-worm home, always on — run 2: separate worlds)
   const RC = 0.30*MIN;

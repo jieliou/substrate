@@ -1,0 +1,140 @@
+{
+ "verdicts": {
+  "P30_the_leash": {
+   "R_default_c2": 0.1506,
+   "R_cut_c2": 0.0003,
+   "ratio": 0.002,
+   "verdict": "LEASH",
+   "R_cut_c1": 0.0024,
+   "R_default_c1": 0.0317,
+   "cut_c2_all": [
+    0.0,
+    0.1809,
+    0.0801,
+    0.0475,
+    0.0,
+    0.2116,
+    0.0,
+    0.0955,
+    0.0,
+    0.0005,
+    0.0,
+    0.0
+   ],
+   "pass": true
+  },
+  "P31_the_die": {
+   "R_split_c2": 0.1045,
+   "ratio": 0.694,
+   "verdict": "exonerated",
+   "R_split_c1": 0.0245,
+   "split_c2_all": [
+    0.2395,
+    0.0,
+    0.1812,
+    0.1809,
+    0.1298,
+    0.0,
+    0.0945,
+    0.0,
+    0.0,
+    0.0,
+    0.1453,
+    0.1145
+   ],
+   "pass": true
+  },
+  "P32_closure": {
+   "R_splitcut_c2": 0.0053,
+   "ratio": 0.035,
+   "closure": "consistent",
+   "splitcut_c2_all": [
+    0.1627,
+    0.0,
+    0.0933,
+    0.1544,
+    0.1058,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0105,
+    0.1095
+   ],
+   "pass": true
+  },
+  "P33_seed7": {
+   "split": {
+    "insim_NOSOC": 0.1431,
+    "insim_NOSOC2": 0.0741,
+    "offline_NOSOC2": 0.0945
+   },
+   "cut": {
+    "insim_NOSOC": 0.2837,
+    "insim_NOSOC2": 0,
+    "offline_NOSOC2": 0.0
+   },
+   "splitcut": {
+    "insim_NOSOC": 0.0065,
+    "insim_NOSOC2": 0,
+    "offline_NOSOC2": 0.0
+   },
+   "pass": true
+  },
+  "P29_instrument": {
+   "no_touch_vs_pass7": true,
+   "split_repeat_match": true,
+   "cut_repeat_match": true,
+   "doors_reach_physics": true,
+   "distinct_within_condition": true,
+   "n_ok": true,
+   "zero_errors": true,
+   "pass": true
+  }
+ },
+ "steady_seed7_default": {
+  "FULL": {
+   "I": 0.8558,
+   "C": 0.9541,
+   "J": 0.2838,
+   "S": 0.9983,
+   "F": 0.1013
+  },
+  "NI": {
+   "I": 0.0918,
+   "C": 0.9727,
+   "J": 0.2819,
+   "S": 0.9984,
+   "F": 0.3276
+  },
+  "NOSOC": {
+   "I": 0.8721,
+   "C": 0.9552,
+   "J": 0.2627,
+   "S": 0.9931,
+   "F": 0.3753
+  },
+  "FULL2": {
+   "I": 0.8867,
+   "C": 0.9535,
+   "J": 0.2633,
+   "S": 0.9987,
+   "F": 0.5199
+  },
+  "NI2": {
+   "I": -0.0036,
+   "C": 0.9728,
+   "J": 0.2744,
+   "S": 0.9984,
+   "F": 0.1853
+  },
+  "NOSOC2": {
+   "I": 0.852,
+   "C": 0.9544,
+   "J": 0.2665,
+   "S": 0.9883,
+   "F": 0.0369
+  }
+ }
+}
