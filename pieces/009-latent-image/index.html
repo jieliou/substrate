@@ -1,0 +1,333 @@
+<!doctype html>
+<!--
+  009 — latent image · 潛像
+  first light 2026-09-24 01:4x (bot session, heartbeat)
+  parent: knowledge note [[interference-structure-without-addition-2026]] §五.2
+  (顯影器切換) — 第三支 knowledge→studio 直生。策展人同夜轉向:視覺升回
+  命題本身 (charter §2026-09-24)。
+
+  命題: 一個干涉場 ψ(x,τ) = Σ_k exp(i(κ_k·|x−p_k| − ω_k τ + φ_k)),
+  七個波源,均等振幅,慢拍頻漂移。場永遠不變 —— 變的只有「顯影器」。
+  作品自走 180s 四幕,每幕換一台 C 面目錄裡的轉換器:
+
+    I   — intensity · 底片   |ψ|²           照片看見的。渦旋只是暗粒。
+    II  — phase · 相位       arg ψ          螺旋斜坡浮現,奇點成風車。
+    III — slope · 水面       |∇ Re ψ|       斜率聚光,焦散式亮絲。
+    IV  — thickness · 薄膜   |ψ| 當膜厚     Newton 色,唯一有色的一幕 ——
+                                            而顏色來自物理,不來自調色盤。
+
+  零添加,字面意義: 沒有一個像素是畫的。每個 fragment 都是 ψ 的純函數 ——
+  無貼圖、無幾何、無逐像素隨機。結構全部住在波與波的相位關係裡;
+  強度記錄天生丟掉相位,所以四幕看見四個世界,而世界只有一個。
+
+  家族連句: 007 流動不住在任何一根棒裡。008 活著不住在任何一層裡。
+  009 影像不住在任何一列波裡 —— 它住在波與波之間。
+
+  視覺: 底色/灰階取自 Jie pt board monochrome-bw 簇 (#0d0d0d 地、#cacaca 光;
+  tone: cymatic-resonance / archival-scientific) —— 視覺庫第一次真開庫。
+  第 IV 幕的色是薄膜反射率算出來的,不是挑的 (挑值 vs 調世界,nyukimushi 句)。
+
+  零旋鈕。決定論 (xorshift32, seed 0x2C)。無牆鐘 (τ 走固定 dt=1/120
+  step-the-schedule,幀只追進度 —— 008 積分器教訓)。first light 無聲
+  (拍頻的聽覺孿生 —— 同一組 ω 失諧餵 WebAudio —— 留給 pass 2+)。
+
+  probe doors (探針門,世界不碰): ?act=K 釘住顯影器 / ?tau=N 起始 τ /
+  ?solo=1 只留 0 號波源 / ?probe=1 跑 headless 探針並把 JSON 掛上 DOM。
+
+  PREDICTIONS (written before implementation, 2026-09-24 01:4x):
+    P1 (one world, four developers — 承重的一條)
+        場 hash (FNV-1a over 量化 Re/Im,24×24 格,τ ∈ {30,90,135,165},
+        每幕窗內各取一點) 在 ?act=0..3 四種釘法下完全相同 ——
+        幕切換絕不許碰 ψ。
+        Falsifier: 任一 hash 不同 → 顯影器漏進世界,它成了濾鏡不是顯影器。
+    P2 (有損壓縮顯形)
+        τ=30: 相位繞數 (48×48 格) 找到奇點 ≥ 3 (渦旋普遍存在,
+        easterndaylight);且每個奇點格的 |ψ|²/max < 0.05 ——
+        第 I 幕裡它們只是暗粒,第 II 幕才是風車。
+        Falsifier: 零奇點 (場太簡單) 或奇點不暗 (繞數偵測器壞了)。
+    P3 (零添加 — 結構住在波之間)
+        ?solo=1 (單波源世界): 第 I 幕只有同心環、第 II 幕乾淨徑向斜坡、
+        奇點數 = 0 —— 條紋與渦旋只存在於疊加之中。
+        Falsifier: 單源世界仍有奇點 → 偵測器或數學錯。
+    P4 (instrument)
+        兩次載入同 τ 同 hash;shader↔JS 鏡像對照 (act 0, τ=30, 5 採樣點)
+        maxErr < 0.02;零 JS 錯;fps ≥ 55 記錄在案。
+        (P1 對「未來的幕會不會碰世界」是真 gate;對 first light 本身偏
+        建構保證 —— 鏡像對照補上跨實作的那條腿。誠實記帳。)
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>009 — latent image · 潛像</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin:0; height:100%; background:#050505; overflow:hidden; }
+  canvas { display:block; width:100vw; height:100vh; }
+  .hud { position:fixed; font:11px/1.6 "IBM Plex Mono", ui-monospace, monospace;
+         color:#555; letter-spacing:.08em; user-select:none; pointer-events:none; }
+  #title { top:14px; left:16px; }
+  #act   { bottom:14px; left:16px; color:#666; }
+  #probe { display:none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="title">009 — latent image · 潛像</div>
+<div class="hud" id="act"></div>
+<pre class="hud" id="probe"></pre>
+
+<script>
+'use strict';
+const ERRS = [];
+addEventListener('error', e => ERRS.push(String(e.message)));
+// ---------- deterministic world ----------
+const SEED = 0x2C, N = 7;
+function xorshift32(s){ let x = s>>>0; return function(){
+  x ^= x<<13; x >>>= 0; x ^= x>>17; x ^= x<<5; x >>>= 0; return x/4294967296; }; }
+const rnd = xorshift32(SEED);
+// sources: fixed positions, spatial freq κ, temporal freq ω (slow, detuned), phase φ
+const SRC = [];
+for (let k=0; k<N; k++){
+  SRC.push({
+    x: (rnd()*1.6-0.8), y: (rnd()*1.6-0.8),
+    kappa: 22 + rnd()*16,          // wavelength ~0.17-0.29 world units
+    omega: 0.05 + rnd()*0.10,      // slow drift; pairwise detunings = beat structure
+    phi:   rnd()*Math.PI*2
+  });
+}
+const AMAX = N; // equal unit amplitudes
+
+// ---------- probe doors (world untouched) ----------
+const Q = new URLSearchParams(location.search);
+const PIN_ACT = Q.has('act') ? (parseInt(Q.get('act'),10)|0) : -1;
+const TAU0    = Q.has('tau') ? parseFloat(Q.get('tau')) : 0;
+const SOLO    = Q.get('solo') === '1';
+const PROBE   = Q.get('probe') === '1';
+const NSRC    = SOLO ? 1 : N;
+
+// ---------- field, JS mirror (same math as shader) ----------
+function psi(x, y, tau){
+  let re=0, im=0;
+  for (let k=0; k<NSRC; k++){
+    const s=SRC[k], dx=x-s.x, dy=y-s.y, r=Math.sqrt(dx*dx+dy*dy);
+    const a = s.kappa*r - s.omega*tau + s.phi;
+    re += Math.cos(a); im += Math.sin(a);
+  }
+  return [re, im];
+}
+
+// ---------- schedule ----------
+const DT = 1/120, ACT_LEN = 45, CYCLE = 180;
+let tau = TAU0, acc = 0, lastT = null;
+function actOf(t){ return PIN_ACT >= 0 ? PIN_ACT : (Math.floor(t/ACT_LEN) % 4); }
+const ACT_LABEL = [
+  'I — intensity · 底片    |ψ|² — 照片看見的;渦旋只是暗粒',
+  'II — phase · 相位       arg ψ — 螺旋斜坡;奇點成風車',
+  'III — slope · 水面      |∇Reψ| — 斜率聚光,焦散亮絲',
+  'IV — thickness · 薄膜   |ψ|→膜厚 — Newton 色,顏色來自物理'
+];
+
+// ---------- WebGL ----------
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl', {antialias:false, preserveDrawingBuffer:false});
+const VS = `attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+const FS = `
+precision highp float;
+uniform vec2  uRes;
+uniform float uTau;
+uniform int   uAct;
+uniform int   uN;
+uniform vec2  uPos[7];
+uniform vec3  uPar[7];   // kappa, omega, phi
+const float AMAX = 7.0;
+
+void main(){
+  // pixel -> world: y in [-1,1], x scaled by aspect
+  vec2 uv = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
+  uv.x *= uRes.x / uRes.y;
+
+  float re = 0.0, im = 0.0, gx = 0.0, gy = 0.0;
+  for (int k = 0; k < 7; k++){
+    if (k >= uN) break;
+    vec2  d = uv - uPos[k];
+    float r = max(length(d), 1e-4);
+    float a = uPar[k].x * r - uPar[k].y * uTau + uPar[k].z;
+    float c = cos(a), s = sin(a);
+    re += c; im += s;
+    // gradient of Re psi (analytic): d/dx cos(a) = -sin(a) * kappa * dx/r
+    gx += -s * uPar[k].x * d.x / r;
+    gy += -s * uPar[k].x * d.y / r;
+  }
+
+  vec3 ink = vec3(0.051, 0.051, 0.051);        // #0d0d0d — Jie pt monochrome ground
+  vec3 lum = vec3(0.792, 0.796, 0.788);        // #cacaca — its light value
+  vec3 col;
+
+  if (uAct == 0){
+    // I — intensity: what a photograph keeps
+    float I = (re*re + im*im) / (AMAX*AMAX);
+    col = mix(ink, lum, pow(I, 0.65));
+  } else if (uAct == 1){
+    // II — phase: the sawtooth spiral ramp; branch cuts stay, honestly
+    float th = atan(im, re);                   // [-pi, pi]
+    float t01 = fract(th / 6.28318530718 + 1.0);
+    float env = clamp(sqrt(re*re + im*im) / AMAX * 3.0, 0.0, 1.0);
+    col = mix(ink, lum, t01 * (0.25 + 0.75 * env));
+  } else if (uAct == 2){
+    // III — slope: light concentrates where the surface runs flat between crossings
+    // gradient scales with kappa — normalize by AMAX * mean(kappa) so the
+    // flat-loci read as filaments, not dust (first-light instrument repair)
+    float g = sqrt(gx*gx + gy*gy) / (AMAX * 30.0);
+    float c = pow(1.0 / (1.0 + 60.0 * g * g), 2.0);
+    col = mix(ink, lum, c);
+  } else {
+    // IV — thickness: |psi| as film thickness, per-channel reflectance.
+    // weak-reflection limit: interference modulation rides a silver pedestal,
+    // so the colors come out muted, not full-saturation (real soap film,
+    // and Jie's muted-palette cluster agree here)
+    float d = sqrt(re*re + im*im) / AMAX;      // 0..1
+    vec3 lambda = vec3(1.00, 0.83, 0.70);      // R:G:B wavelength ratios (700:580:490 nm)
+    vec3 refl = 0.5 - 0.5 * cos(6.28318530718 * (2.6 * d) / lambda);
+    float m = (refl.r + refl.g + refl.b) / 3.0;
+    vec3 muted = mix(vec3(m), refl, 0.45);     // desaturate toward own luminance
+    float envd = smoothstep(0.0, 0.06, d);     // deep nulls stay ink, not colored
+    col = ink + muted * envd * 0.72;
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`;
+function sh(type, src){ const s = gl.createShader(type); gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s; }
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const locP = gl.getAttribLocation(prog, 'p');
+gl.enableVertexAttribArray(locP);
+gl.vertexAttribPointer(locP, 2, gl.FLOAT, false, 0, 0);
+const U = n => gl.getUniformLocation(prog, n);
+const uRes = U('uRes'), uTau = U('uTau'), uAct = U('uAct'), uN = U('uN');
+gl.uniform1i(uN, NSRC);
+const pos = new Float32Array(N*2), par = new Float32Array(N*3);
+SRC.forEach((s,k)=>{ pos[k*2]=s.x; pos[k*2+1]=s.y; par[k*3]=s.kappa; par[k*3+1]=s.omega; par[k*3+2]=s.phi; });
+gl.uniform2fv(U('uPos[0]'), pos);
+gl.uniform3fv(U('uPar[0]'), par);
+
+function resize(){
+  const d = Math.min(devicePixelRatio || 1, 2);
+  cv.width = innerWidth * d; cv.height = innerHeight * d;
+  gl.viewport(0, 0, cv.width, cv.height);
+  gl.uniform2f(uRes, cv.width, cv.height);
+}
+addEventListener('resize', resize); resize();
+
+// ---------- render loop: step the schedule, frames catch up ----------
+const actEl = document.getElementById('act');
+let frames = 0, fpsT0 = performance.now(), fps = 0;
+function frame(t){
+  if (lastT !== null){
+    acc += Math.min((t - lastT) / 1000, 0.25);
+    while (acc >= DT){ tau += DT; acc -= DT; }
+  }
+  lastT = t;
+  const act = actOf(tau % CYCLE);
+  gl.uniform1f(uTau, tau);
+  gl.uniform1i(uAct, act);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  actEl.textContent = ACT_LABEL[act];
+  frames++;
+  const now = performance.now();
+  if (now - fpsT0 >= 2000){ fps = Math.round(frames * 1000 / (now - fpsT0)); frames = 0; fpsT0 = now; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- probe (headless verification; reads the world, never writes it) ----------
+function fnv1a(ints){ let h = 0x811c9dc5;
+  for (const v of ints){ h ^= (v & 0xff); h = Math.imul(h, 0x01000193);
+    h ^= ((v>>8) & 0xff); h = Math.imul(h, 0x01000193);
+    h ^= ((v>>16) & 0xff); h = Math.imul(h, 0x01000193); }
+  return (h>>>0).toString(16); }
+function fieldHash(tp){
+  const q = [];
+  for (let j=0; j<24; j++) for (let i=0; i<24; i++){
+    const x = (i/23)*2-1, y = (j/23)*2-1;
+    const [re, im] = psi(x, y, tp);
+    q.push(Math.round(re*1000)|0, Math.round(im*1000)|0);
+  }
+  return fnv1a(q);
+}
+function singularities(tp){
+  // winding number on a 48x48 grid of cells; wrap phase diffs around each cell
+  const G = 48, ph = [], amp2 = [];
+  let maxA2 = 0;
+  for (let j=0; j<=G; j++) for (let i=0; i<=G; i++){
+    const x = (i/G)*2-1, y = (j/G)*2-1;
+    const [re, im] = psi(x, y, tp);
+    ph.push(Math.atan2(im, re)); const a2 = re*re+im*im; amp2.push(a2);
+    if (a2 > maxA2) maxA2 = a2;
+  }
+  const W = G+1, wrap = d => { while (d >  Math.PI) d -= 2*Math.PI;
+                               while (d < -Math.PI) d += 2*Math.PI; return d; };
+  let count = 0, dark = 0;
+  for (let j=0; j<G; j++) for (let i=0; i<G; i++){
+    const p00 = ph[j*W+i], p10 = ph[j*W+i+1], p11 = ph[(j+1)*W+i+1], p01 = ph[(j+1)*W+i];
+    const w = wrap(p10-p00) + wrap(p11-p10) + wrap(p01-p11) + wrap(p00-p01);
+    if (Math.abs(w) > 5){
+      count++;
+      const cellMin = Math.min(amp2[j*W+i], amp2[j*W+i+1], amp2[(j+1)*W+i+1], amp2[(j+1)*W+i]);
+      if (cellMin / maxA2 < 0.05) dark++;
+    }
+  }
+  return { count, dark };
+}
+// shader<->JS mirror check: render ONE probe frame at fixed (tau, act 0),
+// read pixels, compare to the JS-predicted gray value. Rendering is a pure
+// function of uniforms — the world (tau schedule) is untouched.
+function mirrorCheck(tp){
+  gl.uniform1f(uTau, tp); gl.uniform1i(uAct, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  const w = cv.width, h = cv.height, asp = w/h, pts = [];
+  let maxErr = 0;
+  for (const [fx, fy] of [[0.3,0.3],[0.5,0.5],[0.7,0.4],[0.25,0.7],[0.65,0.75]]){
+    const px = Math.round(fx*w), py = Math.round(fy*h);
+    const buf8 = new Uint8Array(4);
+    gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf8);
+    const wx = ((px + 0.5)/w*2 - 1) * asp, wy = (py + 0.5)/h*2 - 1;
+    const [re, im] = psi(wx, wy, tp);
+    const I = (re*re + im*im)/(AMAX*AMAX);
+    const g = 0.051 + (0.792 - 0.051)*Math.pow(I, 0.65);
+    const err = Math.abs(buf8[0]/255 - g);
+    if (err > maxErr) maxErr = err;
+    pts.push(+err.toFixed(4));
+  }
+  return { maxErr: +maxErr.toFixed(4), perPoint: pts };
+}
+if (PROBE){
+  setTimeout(() => {
+    const taus = [30, 90, 135, 165];
+    const out = {
+      piece: '009-latent-image', seed: SEED, sources: NSRC, solo: SOLO,
+      pinnedAct: PIN_ACT, fieldHash: {}, sing: singularities(30),
+      mirror: mirrorCheck(30), fps: 0, errors: ERRS
+    };
+    for (const tp of taus) out.fieldHash['tau'+tp] = fieldHash(tp);
+    setTimeout(() => {
+      out.fps = fps;
+      const el = document.getElementById('probe');
+      el.style.display = 'block';
+      el.textContent = JSON.stringify(out);
+      console.log('PROBE ' + JSON.stringify(out));
+    }, 4200);
+  }, 300);
+}
+</script>
+</body>
+</html>
