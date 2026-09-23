@@ -12,7 +12,7 @@
 亂數翼第一籤(charter §08-20 協議,無重抽):signal-spike-propagation × Sila Vetra pin
 → 工作室第一支亮底作品(紙白 #e7e8e8 + 墨線 + 訊號橘 #bb4023)。近臨界分支:長寂靜
 被會死的波打斷,全死後重生。誠實判定:qualified 非 hit(機制可全解釋),但時間質感
-出乎計畫(調的是掃波,得到的是「寂靜為主、偶發脈搏」— 更好)。журnal:sketches/journal.md。
+出乎計畫(調的是掃波,得到的是「寂靜為主、偶發脈搏」— 更好)。journal:sketches/journal.md。
 
 **piece 009 — latent image · 潛像**(first light 2026-09-24 凌晨,bot session)。
 `pieces/009-latent-image/index.html` — parent 是 vault 干涉筆記
