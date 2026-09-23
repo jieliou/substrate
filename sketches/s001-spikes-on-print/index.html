@@ -1,0 +1,163 @@
+<!doctype html>
+<!--
+  sketch s001 — spikes on a printed graph
+  2026-09-24 03:4x (bot session) — 亂數翼第一籤 (charter §08-20 protocol)
+
+  DRAW (sort -R, no re-rolls):
+    mechanism: signal-spike-propagation — 訊號式網流,圖上的 spike 波傳遞,
+               不守恆、會死會生 (network-graph note, 07-23 擴充)
+    pin:       @FigsFromPlums — Sila Vetra (studio photography: white cinch bag,
+               orange rope, seamless backdrop; tone editorial-bold / technical-precise;
+               palette #e7e8e8 / #3c3e3c / #bb4023)
+
+  What the pin forced: the studio's FIRST light-ground piece. A printed technical
+  diagram (thin dark lines on seamless paper white) that happens to be alive —
+  the only color is the signal itself, rope-orange.
+
+  Sketch protocol: no predictions, no hypotheses, no probe doors. Build, look,
+  one honest line in the journal. Success marker = 不懂但想一直看 (haukun).
+  If I can fully explain what I see, it's qualified but not a hit.
+
+  Dynamics (integrate-and-fire, non-conserving): pulses travel edges with finite
+  speed; a node needs near-coincident arrivals to fire (w < θ), leaks otherwise;
+  refractory after firing; sparse regions starve the wave, dense regions carry it;
+  rare spontaneous births keep the graph from going silent forever.
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>s001 — spikes on a printed graph</title>
+<style>
+  :root { color-scheme: light; }
+  html, body { margin:0; height:100%; background:#e7e8e8; overflow:hidden; }
+  canvas { display:block; width:100vw; height:100vh; }
+  .hud { position:fixed; font:11px/1.6 "IBM Plex Mono", ui-monospace, monospace;
+         color:#9a9c9a; letter-spacing:.08em; user-select:none; pointer-events:none; }
+  #t { top:14px; left:16px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="t">s001 — spikes on a printed graph · 訊號不守恆,會死也會生</div>
+<script>
+'use strict';
+const SEED = 0xA1;
+function xs(s){ let x=s>>>0; return ()=>{ x^=x<<13; x>>>=0; x^=x>>17; x^=x<<5; x>>>=0; return x/4294967296; }; }
+const rnd = xs(SEED);
+
+const INK = '#3c3e3c', PAPER = '#e7e8e8', ROPE = '#bb4023';
+
+// --- graph: blue-noise-ish nodes, proximity edges ---
+const W = () => innerWidth, H = () => innerHeight;
+const nodes = [], edges = [];
+(function build(){
+  const margin = 70, R2min = 68*68, tries = 4000;
+  for (let t=0; t<tries && nodes.length<110; t++){
+    const x = margin + rnd()*(W()-2*margin), y = margin + rnd()*(H()-2*margin);
+    let ok = true;
+    for (const n of nodes){ const dx=n.x-x, dy=n.y-y; if (dx*dx+dy*dy < R2min){ ok=false; break; } }
+    if (ok) nodes.push({x, y, v:0, ref:0, flash:0, deg:0});
+  }
+  const RE = 150;
+  for (let i=0; i<nodes.length; i++) for (let j=i+1; j<nodes.length; j++){
+    const a=nodes[i], b=nodes[j], dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
+    if (d < RE && a.deg < 5 && b.deg < 5){ edges.push({a:i, b:j, len:d}); a.deg++; b.deg++; }
+  }
+})();
+
+// --- dynamics ---
+const THETA = 1.0, WGT = 0.62, LEAK = 4.0, REFRAC = 2.0, SPEED = 130; // px/s
+let pulses = [];   // {e, from, s}  s in [0,1]
+function fire(i, t){
+  const n = nodes[i];
+  n.ref = REFRAC; n.v = 0; n.flash = 1;
+  for (let e=0; e<edges.length; e++){
+    const ed = edges[e];
+    if (ed.a === i) pulses.push({e, from:'a', s:0});
+    else if (ed.b === i) pulses.push({e, from:'b', s:0});
+  }
+}
+let nextBirth = 1.0;
+function step(dt, t){
+  for (const n of nodes){
+    n.v = Math.max(0, n.v - LEAK*n.v*dt);
+    n.ref = Math.max(0, n.ref - dt);
+    n.flash = Math.max(0, n.flash - 2.2*dt);
+  }
+  const arrived = [];
+  pulses = pulses.filter(p => {
+    p.s += SPEED*dt / edges[p.e].len;
+    if (p.s >= 1){ arrived.push(p); return false; }
+    return true;
+  });
+  for (const p of arrived){
+    const ed = edges[p.e], tgt = p.from==='a' ? ed.b : ed.a, n = nodes[tgt];
+    if (n.ref > 0) continue;                 // hits a refractory node: the spike dies
+    n.v += WGT;                              // coincidence path (two near-simultaneous arrivals)
+    if (n.v >= THETA || rnd() < 0.18) fire(tgt, t);  // + stochastic path: near-critical branching
+  }
+  nextBirth -= dt;
+  if (nextBirth <= 0){                       // spontaneous birth keeps it from silence
+    nextBirth = 1.5 + rnd()*3.0;
+    const i = (rnd()*nodes.length)|0;
+    if (nodes[i].ref <= 0) fire(i, t);
+  }
+}
+
+// --- render: crisp diagram each frame, no motion blur ---
+const cv = document.getElementById('c'), cx = cv.getContext('2d');
+function resize(){ const d = Math.min(devicePixelRatio||1, 2);
+  cv.width = W()*d; cv.height = H()*d; cx.setTransform(d,0,0,d,0,0); }
+addEventListener('resize', resize); resize();
+
+function draw(t){
+  cx.fillStyle = PAPER; cx.fillRect(0,0,W(),H());
+  // edges: hairline ink
+  cx.strokeStyle = INK; cx.globalAlpha = 0.28; cx.lineWidth = 1;
+  cx.beginPath();
+  for (const ed of edges){ const a=nodes[ed.a], b=nodes[ed.b];
+    cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); }
+  cx.stroke(); cx.globalAlpha = 1;
+  // nodes: small ink dots; refractory ones hollow (spent)
+  for (const n of nodes){
+    cx.beginPath(); cx.arc(n.x, n.y, 2.4, 0, 6.2832);
+    if (n.ref > 0){ cx.strokeStyle = INK; cx.lineWidth = 1; cx.stroke(); }
+    else { cx.fillStyle = INK; cx.fill(); }
+  }
+  // pulses: rope-orange comets along edges (head runs source -> target, tail trails)
+  for (const p of pulses){
+    const ed = edges[p.e];
+    const S = p.from==='a' ? nodes[ed.a] : nodes[ed.b];
+    const T = p.from==='a' ? nodes[ed.b] : nodes[ed.a];
+    const hs = p.s, ts = Math.max(0, p.s - 0.12);
+    const hx = S.x + (T.x-S.x)*hs, hy = S.y + (T.y-S.y)*hs;
+    const tx = S.x + (T.x-S.x)*ts, ty = S.y + (T.y-S.y)*ts;
+    cx.strokeStyle = ROPE; cx.lineWidth = 2.2; cx.globalAlpha = 0.85;
+    cx.beginPath(); cx.moveTo(tx, ty); cx.lineTo(hx, hy); cx.stroke();
+    cx.globalAlpha = 1;
+    cx.fillStyle = ROPE; cx.beginPath(); cx.arc(hx, hy, 2.6, 0, 6.2832); cx.fill();
+  }
+  // firing flash: bold orange ring, editorial accent
+  for (const n of nodes){
+    if (n.flash > 0){
+      cx.strokeStyle = ROPE; cx.globalAlpha = n.flash;
+      cx.lineWidth = 2.5;
+      cx.beginPath(); cx.arc(n.x, n.y, 6 + (1-n.flash)*14, 0, 6.2832); cx.stroke();
+      cx.globalAlpha = 1;
+    }
+  }
+}
+
+const DT = 1/120; let acc = 0, last = null, tau = 0;
+function loop(ms){
+  if (last !== null){ acc += Math.min((ms-last)/1000, 0.25);
+    while (acc >= DT){ step(DT, tau); tau += DT; acc -= DT; } }
+  last = ms;
+  draw(tau);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
