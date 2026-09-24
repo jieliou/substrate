@@ -32,7 +32,68 @@
   (拍頻的聽覺孿生 —— 同一組 ω 失諧餵 WebAudio —— 留給 pass 2+)。
 
   probe doors (探針門,世界不碰): ?act=K 釘住顯影器 / ?tau=N 起始 τ /
-  ?solo=1 只留 0 號波源 / ?probe=1 跑 headless 探針並把 JSON 掛上 DOM。
+  ?solo=1 只留 0 號波源 / ?probe=1 跑 headless 探針並把 JSON 掛上 DOM /
+  ?sound=1 嘗試自動開聲 (瀏覽器手勢政策下通常仍需點擊; headless 用)。
+
+  ---- pass 2 — the ear · 耳朵是第五台顯影器 (2026-09-25 00:3x, bot session) ----
+
+  first light 頭註承諾的聽覺孿生。設計律先立,程式後寫:
+
+    不作曲。聲音 = 場本身: audio_e(t) = (1/N) Σ_k cos(2π f_c t + κ_k r_k(x_e) + φ_k − ω_k τ)
+    = Re[ψ(x_e, τ)·e^{i 2π f_c t}] —— 同一個 ψ,在聆聽點外差 (heterodyne) 到
+    載波 f_c = 220 Hz。載波是耳朵唯一的新常數 (如 #cacaca 之於眼睛)。
+    聆聽點零新增空間常數: 左耳站在 0 號波源上,右耳站在 1 號波源上 ——
+    耳朵站在波出生的地方。振幅包絡 = |ψ(x_ear, τ)|/N,與第 I 幕渲染的是
+    同一個量 —— 耳朵是「單點強度顯影器 + 相位保留為微失諧」。拍週期由
+    真 ω 失諧決定 (Δω ≤ 0.1 rad/s → 拍 ≥ 63s),180s 一輪聽得到起伏與暗滅。
+
+    眼睛的顯影器每 45s 硬切一次;耳朵的顯影器從不眨眼。切幕瞬間聲音
+    連續不斷 —— P1 (幕不碰世界) 第一次成為「聽得到」的性質。
+    獨奏門 (?solo=1) 下耳朵聽到振幅恆為 1 的一根不變音 (單位相量的包絡
+    是常數,數學必然,不列預測) —— 拍與寂靜只存在於疊加之中: P3 的聽覺版。
+
+    時鐘: worklet τ 以 1/sampleRate 步進,每 rAF 收主線程視覺 τ 並以
+    限速 slew 對齊 (單一時程表,耳朵跟隨,不另立世界)。手勢後才有聲
+    (瀏覽器政策); S 鍵或點擊切換,0.8s 增益斜坡防 click。
+
+  PREDICTIONS pass 2 (written before the audio code, 2026-09-25 00:3x):
+    P5 (耳朵不碰世界 — 建構保證,誠實記帳如 P4)
+        ?sound=1&probe=1 下四個 τ 探點的場 hash 與 first light 基準完全相同;
+        音訊路徑零額外 rnd() 抽取 (SRC 不動)。
+        Falsifier: 任一 hash 變 → 耳朵寫了世界。
+    P6 (耳朵聽到的確實是場)
+        OfflineAudioContext 渲染 8s (τ₀=30,無手勢路徑,同一份 worklet
+        kernel): 每 0.25s 塊 RMS 與 JS 鏡像預測 |ψ(x_ear, τ_mid)|/(N√2)
+        對照 —— 包絡 |ψ|/N > 0.07 的塊 relErr < 0.06,近零塊絕對差 < 0.02,
+        左右耳分別過。
+        Falsifier: 超差 → worklet 與鏡像不是同一個數學,孿生是假的。
+    P7 (潛寂 — 暗粒的聽覺對應;有風險的一條)
+        JS 鏡像掃 τ ∈ [0,180) (dt=0.25): 兩耳的包絡 |ψ|/N 各自至少
+        觸底一次 (< 0.10),且 max/min ≥ 4 (拍是真起伏不是微顫)。
+        Falsifier: 任一耳整輪不沉底 → 這兩個聆聽點在一輪內聽不到潛像
+        的寂靜 (若敗,照實記錄; pass 3 的正當工作是搬椅子,不是改門檻)。
+    P8 (無縫 — 幕不進耳朵)
+        音訊 kernel 無 act 輸入 (程式面可查);兩次獨立 offline 渲染
+        (同 τ₀) 的樣本 hash (FNV over int16) 完全相同 —— 決定論 +
+        act 不可達 ⇒ 切幕永遠無縫。
+        Falsifier: hash 不同 → 音訊路徑有隱藏狀態,無縫是運氣不是性質。
+
+  VERDICT pass 2 (2026-09-25 00:5x — ?probe=1&sound=1 headless + live 手勢實測):
+    P5 PASS — 四個場 hash 與 first light 基準完全相同
+        (9e52d192 / d42f8096 / ba998017 / e0fea39f),聲門全開下量測。
+    P6 PASS — offline 渲染 vs JS 鏡像: maxRelErr 0 (L) / 0.0001 (R),
+        近零塊絕對差 0 —— worklet 與鏡像是同一個數學,孿生為真。
+    P7 PASS (險過,照實記) — L min 0.0855 / R min 0.0806 (門檻 < 0.10),
+        range 5.1× / 6.8×,而且兩耳各「恰好一次」觸底 —— 比預測的
+        「至少一次」更乾淨: 一輪一谷,每耳每三分鐘沉一次底。
+        誠實一筆: 潛寂是沉到約 1/5 的深谷,不是全滅;009 的耳朵是
+        起伏為主、偶觸底 —— 與 s001 的寂靜為主恰成對照,同族物理,
+        兩種時間質感。
+    P8 PASS — 兩次獨立渲染 int16 樣本 hash 相同 (62ce6ce);act 不進
+        kernel,無縫是性質不是運氣。
+    live: keydown 手勢 → AudioContext running,增益斜坡生效,analyser
+    RMS 0.030 與 |ψ|/(N√2)·gain 同量級; fps 120 不動、mirror 0.0018
+    不動、ERRS 空。視覺四幕與 first light 逐像素同源 (世界零改動)。
 
   PREDICTIONS (written before implementation, 2026-09-24 01:4x):
     P1 (one world, four developers — 承重的一條)
@@ -68,6 +129,7 @@
          color:#555; letter-spacing:.08em; user-select:none; pointer-events:none; }
   #title { top:14px; left:16px; }
   #act   { bottom:14px; left:16px; color:#666; }
+  #snd   { bottom:14px; right:16px; color:#555; pointer-events:auto; cursor:pointer; }
   #probe { display:none; }
 </style>
 </head>
@@ -75,6 +137,7 @@
 <canvas id="c"></canvas>
 <div class="hud" id="title">009 — latent image · 潛像</div>
 <div class="hud" id="act"></div>
+<div class="hud" id="snd">S · 聲 ○</div>
 <pre class="hud" id="probe"></pre>
 
 <script>
@@ -242,12 +305,93 @@ function frame(t){
   gl.uniform1i(uAct, act);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   actEl.textContent = ACT_LABEL[act];
+  if (earNode) earNode.port.postMessage(tau);   // the ear follows THE schedule
   frames++;
   const now = performance.now();
   if (now - fpsT0 >= 2000){ fps = Math.round(frames * 1000 / (now - fpsT0)); frames = 0; fpsT0 = now; }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// ---------- pass 2: the ear — fifth developer (audio twin) ----------
+// sound(t) = Re[ psi(x_ear, tau) * e^{i 2pi FC t} ] — the field itself, heterodyned.
+// Listening points = SRC[0] (L ear) and SRC[1] (R ear): zero new spatial constants;
+// the ear stands where the waves are born. FC is the ear's one transducer constant.
+// The visual developer hard-cuts every 45 s; the ear's developer never blinks —
+// audible continuity across cuts IS P1 made perceptible. No composition anywhere:
+// every phase, every detuning, every swell comes from the world's SRC table.
+const FC = 220, EAR_GAIN = 0.22;
+const EARS = [ {x: SRC[0].x, y: SRC[0].y}, {x: SRC[1].x, y: SRC[1].y} ];
+function earTables(){
+  // per ear, per source: fixed phase kappa*r + phi, and omega (NSRC honors ?solo)
+  return EARS.map(E => {
+    const ph = [], om = [];
+    for (let k=0; k<NSRC; k++){
+      const s = SRC[k], dx = E.x - s.x, dy = E.y - s.y;
+      ph.push(s.kappa * Math.sqrt(dx*dx + dy*dy) + s.phi);
+      om.push(s.omega);
+    }
+    return { ph, om };
+  });
+}
+const WORKLET_SRC = `
+class EarProcessor extends AudioWorkletProcessor {
+  constructor(o){
+    super();
+    const d = o.processorOptions;
+    this.ears = d.ears; this.n = d.n; this.fc = d.fc;
+    this.tau = d.tau0; this.t = 0;
+    this.port.onmessage = e => {                 // slew toward the visual schedule,
+      const err = e.data - this.tau;             // rate-limited: one clock, the ear follows
+      this.tau += Math.max(-0.01, Math.min(0.01, err));
+    };
+  }
+  process(inputs, outputs){
+    const out = outputs[0], dt = 1 / sampleRate, TWO_PI = 6.283185307179586;
+    const L = out[0], R = out.length > 1 ? out[1] : out[0];
+    for (let i = 0; i < L.length; i++){
+      const wc = TWO_PI * this.fc * this.t;
+      for (let e = 0; e < 2; e++){
+        const E = this.ears[e]; let v = 0;
+        for (let k = 0; k < this.n; k++) v += Math.cos(wc + E.ph[k] - E.om[k] * this.tau);
+        (e === 0 ? L : R)[i] = v / this.n;
+      }
+      this.t += dt; this.tau += dt;
+    }
+    return true;
+  }
+}
+registerProcessor('ear', EarProcessor);`;
+async function buildEar(ctx, tau0){
+  const url = URL.createObjectURL(new Blob([WORKLET_SRC], {type:'application/javascript'}));
+  await ctx.audioWorklet.addModule(url);
+  return new AudioWorkletNode(ctx, 'ear', {
+    numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2],
+    processorOptions: { ears: earTables(), n: NSRC, fc: FC, tau0 }
+  });
+}
+let AC = null, earNode = null, earGain = null, soundOn = false;
+const sndEl = document.getElementById('snd');
+async function toggleSound(){
+  try {
+    if (!AC){
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      earGain = AC.createGain(); earGain.gain.value = 0;
+      earNode = await buildEar(AC, tau);
+      earNode.connect(earGain); earGain.connect(AC.destination);
+    }
+    if (AC.state === 'suspended') await AC.resume();
+    soundOn = !soundOn;
+    const now = AC.currentTime;
+    earGain.gain.cancelScheduledValues(now);
+    earGain.gain.setValueAtTime(earGain.gain.value, now);
+    earGain.gain.linearRampToValueAtTime(soundOn ? EAR_GAIN : 0, now + 0.8);
+    sndEl.textContent = soundOn ? 'S · 聲 ●' : 'S · 聲 ○';
+  } catch (e){ ERRS.push('audio: ' + String(e && e.message || e)); }
+}
+addEventListener('keydown', e => { if (e.key === 's' || e.key === 'S') toggleSound(); });
+sndEl.addEventListener('pointerdown', toggleSound);
+if (Q.get('sound') === '1') toggleSound();   // headless door; gesture policy may keep it silent live
 
 // ---------- probe (headless verification; reads the world, never writes it) ----------
 function fnv1a(ints){ let h = 0x811c9dc5;
@@ -310,22 +454,81 @@ function mirrorCheck(tp){
   }
   return { maxErr: +maxErr.toFixed(4), perPoint: pts };
 }
+// audio probe (pass 2): offline renders need no gesture — the ear can be
+// verified headless even though live playback is gesture-gated.
+function envSweep(){
+  // P7 — latent silence: envelope |psi|/N at each ear across one 180 s cycle
+  return EARS.map(E => {
+    let mn = 1e9, mx = 0, dips = 0, below = false;
+    for (let t7 = 0; t7 < 180; t7 += 0.25){
+      const [re, im] = psi(E.x, E.y, t7);
+      const env = Math.sqrt(re*re + im*im) / NSRC;
+      if (env < mn) mn = env; if (env > mx) mx = env;
+      if (env < 0.10){ if (!below){ dips++; below = true; } } else below = false;
+    }
+    return { min:+mn.toFixed(4), max:+mx.toFixed(4), dips,
+             range:+(mx/Math.max(mn,1e-6)).toFixed(1) };
+  });
+}
+async function audioProbe(){
+  const SR = 44100, DUR = 8, A_TAU0 = 30, BLK = 0.25;
+  const render = async () => {
+    const oc = new OfflineAudioContext(2, SR*DUR, SR);
+    const node = await buildEar(oc, A_TAU0);
+    node.connect(oc.destination);
+    return await oc.startRendering();
+  };
+  const b1 = await render(), b2 = await render();
+  // P8 — determinism + act-blind kernel: sample-exact hash equality of two renders
+  const bufHash = buf => {
+    const q = [];
+    for (let c = 0; c < 2; c++){
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < d.length; i++) q.push(Math.round(d[i]*32767)|0);
+    }
+    return fnv1a(q);
+  };
+  const h1 = bufHash(b1), h2 = bufHash(b2);
+  // P6 — the ear hears the field: block RMS vs JS mirror |psi(x_ear)|/(N*sqrt2)
+  const p6 = [];
+  for (let c = 0; c < 2; c++){
+    const d = b1.getChannelData(c), E = EARS[c];
+    let mRel = 0, mAbs = 0;
+    const nb = Math.floor(DUR/BLK);
+    for (let b = 0; b < nb; b++){
+      const i0 = Math.round(b*BLK*SR), i1 = Math.round((b+1)*BLK*SR);
+      let s = 0; for (let i = i0; i < i1; i++) s += d[i]*d[i];
+      const rms = Math.sqrt(s/(i1-i0));
+      const [re, im] = psi(E.x, E.y, A_TAU0 + (b+0.5)*BLK);
+      const env = Math.sqrt(re*re + im*im) / NSRC;
+      const pred = env / Math.SQRT2;
+      if (env > 0.07) mRel = Math.max(mRel, Math.abs(rms-pred)/pred);
+      else mAbs = Math.max(mAbs, Math.abs(rms-pred));
+    }
+    p6.push({ maxRelErr:+mRel.toFixed(4), maxAbsErr:+mAbs.toFixed(4) });
+  }
+  return { fc: FC, ears: EARS.map(E => [+E.x.toFixed(4), +E.y.toFixed(4)]),
+           p6, p7: envSweep(), p8: { h1, h2, equal: h1 === h2 }, sampleRate: SR };
+}
 if (PROBE){
   setTimeout(() => {
     const taus = [30, 90, 135, 165];
     const out = {
       piece: '009-latent-image', seed: SEED, sources: NSRC, solo: SOLO,
-      pinnedAct: PIN_ACT, fieldHash: {}, sing: singularities(30),
+      pinnedAct: PIN_ACT, soundDoor: Q.get('sound') === '1',
+      fieldHash: {}, sing: singularities(30),
       mirror: mirrorCheck(30), fps: 0, errors: ERRS
     };
     for (const tp of taus) out.fieldHash['tau'+tp] = fieldHash(tp);
-    setTimeout(() => {
+    const audioP = audioProbe().then(a => { out.audio = a; })
+                              .catch(e => { out.audioError = String(e && e.message || e); });
+    Promise.all([audioP, new Promise(r => setTimeout(r, 4200))]).then(() => {
       out.fps = fps;
       const el = document.getElementById('probe');
       el.style.display = 'block';
       el.textContent = JSON.stringify(out);
       console.log('PROBE ' + JSON.stringify(out));
-    }, 4200);
+    });
   }, 300);
 }
 </script>
