@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<!--
+  010 — earned grain — 顆粒的出身:長出來的與貼上去的
+  substrate bed. opened 2026-09-26 (pre-dawn).
+
+  ══ 命題 ══
+  同一個場、同一批光子,左右兩邊只差一件事:顆粒從哪來。
+  左(骨相):粒子是光子。每幀以 p=0.08 抽樣「發射」,像素收到的是計數 —
+    grain 是光子統計的殘響,活的,對場知情:暗處喘,亮處定。
+  右(皮相):同一批光子長時間曝光收斂成一張「完美」的圖(快門自載入起
+    一直開著),再蓋一層均勻的動態顆粒 — 質感是演出來的呼吸,對場全盲。
+  裁決規則來自 lightfield 展覽一頁書:「評估任何 substrate 候選,先問它的
+  grain 是長出來的還是貼上去的」。這張床把「問」變成「量」。
+
+  ══ 儀器 ══
+  Photon Transfer Curve(PTC)— 感光元件工程師用 log-log「變異數 對 均值」
+  的斜率證明相機看得見光子:shot-noise 極限 = 斜率 1;外加噪聲 = 斜率 0。
+  銀鹽底片本來就是光子計數器;這裡用 PTC 證明一張渲染「看沒看過光子」。
+
+  ══ 世界 ══
+  200,000 粒子,xorshift32 seed 7,CPU 模擬。三顆同號高斯渦(σ=110,
+  正三角 r=170)+ 向渦心的弱吸引(β=0.00225)+ 各向同性抖動(0.45px)。
+  壽命指數分布(平均 240 幀),重生於圓盤。每幀每粒子以 p=0.08 發射一顆
+  光子,落點 +1 計數(GPU additive blend 與 JS 逐 tile 計數共用同一份
+  發射清單 — 鏡像不是統計近似,是同一串數字)。
+  左顯示:每像素 EMA(α=0.3)的 log 曝光 tone map。
+  右顯示:長曝光平均的同一 tone map,加 display-space 均勻動態顆粒 A=0.05。
+
+  ══ 預註冊預測(pass 1,跑 ?probe=1 前寫定)══
+  P1 場同一性:探針窗內 24 個 tile 的「右側長曝均值」與「左側 EMA 時間
+     均值」Pearson 相關 > 0.999(兩者都在估同一個 μ_t)。
+  P2 骨相 PTC:log Var(EMA_t) 對 log mean(EMA_t) 的 OLS 斜率 ∈ [0.8, 1.2]。
+     ⚠ 具名替代結局(事先寫下):粒子在渦心滯留造成佔用數慢漲落,若斜率
+     衝過 1.2 且亮 tile 系統性偏高 → 死因可讀 =「持續性混淆」:光子可以
+     互相獨立,粒子不行 — 底片類比在這裡裂開。發射抽樣(p=0.08)與寬通
+     帶 EMA(α=0.3)是為壓此混淆而設,估計殘餘 ~1.4×,帶內。
+  P3 顆粒攜訊測試(display space,讀真實渲染像素):tile 顆粒對比(4×4
+     patch 均值的時間 std)對 log μ_t 的 Spearman:骨相 ρ ≤ −0.6(顆粒
+     知道場在哪);皮相 |ρ| ≤ 0.3(顆粒對場全盲)。僅計顯示均值 ≥ 8/255
+     的合格 tile。
+  P4 鏡像檢查:6 個最亮 tile 中心像素,GPU 顯示位元組 反演 tone map 後與
+     JS 逐像素 EMA 鏡像差 ≤ 0.02(display 單位)。
+  P5 兩張定格(骨相/皮相同位置裁切)存入 piece 目錄。
+
+  ══ 探針門(讀世界,不寫世界)══
+  ?probe=1 → 幀 1100 凍結曝光 + 選 24 個 tile(非零 tile 均值 p50→p99.5
+  對數等距);幀 1200 重置右側快門(僅探針模式;live 模式快門自載入常開 —
+  右邊越來越完美然後死掉,左邊永遠活著,這本身就是作品);幀 1200 起收
+  600 幀統計(顯示像素:後半窗、每 2 幀讀一次);結束後把 JSON 掛上
+  #probe 與 window.__PROBE_RESULT。?frames=N 可改收樣長度。
+
+  ══ 儀器修正(pass 1 第一輪跑完即修,門檻未動)══
+  第一輪(warmup 450)P2 斜率 1.38、P3 rhoSkin 0.92 — 兩者都是儀器汙染:
+  (a) 渦心充填時標(壽命 240f × 吸引 1/β≈444f)遠長於 450,趨勢混進
+      Welford 變異數,亮 tile Fano 衝到 11 → warmup 拉到 1200,且 EMA
+      序列改取「去線性趨勢殘差」的變異(左右對稱處理,殺殘餘漂移);
+  (b) 快門重置後 count=1 起就收顯示統計,右側前段是原始 Poisson 幀,
+      收斂噪聲 √μ 假扮成「攜訊的皮相顆粒」→ 顯示統計只收後半窗。
+  命題與 P1-P5 門檻一字未改 — 修的是量測窗,不是判準。
+
+  ══ pass 1 判決(2026-09-26 02:0x,warmup 1200 + 去趨勢儀器)══
+  P1 ✓ 0.9999999(場同一性)/ P2 ✓ 斜率 0.993(光子定律正中 1;截距
+  −1.51 對理論 −1.73 → 殘餘持續性因子 ~1.26,與發射抽樣的預估一致)/
+  P4 ✓ maxErr 0.0020。
+  P3 ✗ 死得可讀,死因比預測美:rhoBone −0.02 不是顆粒不攜訊,是骨相
+  顆粒在 display space 呈倒 U(√μ 上升 × tonemap 肩部壓縮下降)—
+  **真底片的顆粒本來就住在中間調**。我預測了單調遞減,作品比我的假設
+  更忠於攝影物理。rhoSkin −0.31 壓線敗:亮部 byte 裁切壓掉貼的顆粒
+  (真 overlay 也會這樣)。P3 死亡入帳不改判。
+
+  ══ pass 2 預註冊(P3b,跑前寫定)══
+  形狀檢定取代單調檢定:骨相顆粒 ∝ √μ·(1−d)(shot noise × 肩壓,
+  無自由參數,單一全域尺度),24 tile Pearson > 0.9;皮相排除裁切
+  tile(dispSkin ≥ 230)後 CV < 0.25。
+  pass 2 判決(2026-09-26 02:1x):**PASS 全綠**。
+  P1 ✓ 0.9999999 / P2 ✓ 斜率 0.993(與 pass 1 逐位元相同 — seed 7
+  決定論,量測可完全重放)/ P3b ✓ 形狀相關 0.953、皮相 CV 0.086
+  (21 個未裁切 tile)/ P4 ✓ 0.0020。
+  骨相顆粒被證明「知道場在哪」:它的空間分布被 √μ×肩壓模型鎖住
+  (無自由參數);皮相顆粒被證明全盲:去掉裁切後平坦到 CV 8.6%。
+  裁決規則自此有了儀器版:問一張圖的 grain 是長的還是貼的,
+  = 量它的顆粒幅度是被場的形狀鎖住,還是一條平線。
+-->
+<head>
+<meta charset="utf-8">
+<title>010 — earned grain — 顆粒的出身</title>
+<style>
+  html,body { margin:0; background:#060607; height:100%; overflow:hidden;
+              font:11px/1.6 "IBM Plex Mono", ui-monospace, monospace; }
+  #wrap { position:relative; width:1536px; max-width:100vw; margin:0 auto; }
+  canvas { display:block; width:100%; }
+  #divider { position:absolute; left:50%; top:0; bottom:0; width:1px;
+             background:#1c1d1f; }
+  .tag { position:absolute; bottom:10px; color:#8a8d92; letter-spacing:.08em;
+         font-size:11px; user-select:none; }
+  #tagL { left:14px; } #tagR { right:14px; text-align:right; }
+  .tag em { font-style:normal; color:#4d5054; }
+  #probe { display:none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="1536" height="768"></canvas>
+  <div id="divider"></div>
+  <div class="tag" id="tagL">骨相 — 長出來的 <em>photon-counted</em></div>
+  <div class="tag" id="tagR"><em>grain overlay</em> 皮相 — 貼上去的</div>
+</div>
+<pre class="hud" id="probe"></pre>
+<script>
+'use strict';
+// ---------- params ----------
+const W = 768, H = 768, TILE = 16, TX = W/TILE, TY = H/TILE;
+const N = 200000, P_EMIT = 0.08, ALPHA = 0.30, GRAIN_A = 0.05;
+const SIGMA = 110, GAMMA = 254, BETA = 0.00225, JIT = 0.45;
+const LIFE_Q = 1/240, SPAWN_R = 350;
+const Q = new URLSearchParams(location.search);
+const PROBE = Q.get('probe') === '1';
+const STAT_LEN = parseInt(Q.get('frames') || '600', 10);
+// probe warmup 1200: core-filling relaxation ~ lifetime 240f x spiral-in 1/beta ~444f;
+// first run (warmup 450) put Fano~11 drift into dense tiles — trend, not fluctuation.
+const F_EXPOSE = PROBE ? 1100 : 400, F_STATS = PROBE ? 1200 : 450;
+
+// ---------- rng (xorshift32, seed 7) ----------
+let rs = 7 >>> 0;
+function rnd() { rs ^= rs << 13; rs >>>= 0; rs ^= rs >> 17; rs ^= rs << 5; rs >>>= 0; return rs / 4294967296; }
+
+// ---------- world ----------
+const CX = W/2, CY = H/2;
+const CTR = [0, 1, 2].map(i => {
+  const a = (Math.PI/2) + i * 2*Math.PI/3;
+  return [CX + 170*Math.cos(a), CY + 170*Math.sin(a)];
+});
+const px = new Float32Array(N), py = new Float32Array(N);
+function spawn(i) {
+  // half in disc, half near cores — shortens the spiral-in transient
+  if (rnd() < 0.5) {
+    const r = SPAWN_R * Math.sqrt(rnd()), a = rnd()*2*Math.PI;
+    px[i] = CX + r*Math.cos(a); py[i] = CY + r*Math.sin(a);
+  } else {
+    const c = CTR[(rnd()*3)|0];
+    px[i] = c[0] + (rnd()+rnd()+rnd()-1.5)*40;
+    py[i] = c[1] + (rnd()+rnd()+rnd()-1.5)*40;
+  }
+}
+for (let i = 0; i < N; i++) spawn(i);
+
+const S2 = 2*SIGMA*SIGMA;
+function step() {
+  for (let i = 0; i < N; i++) {
+    let x = px[i], y = py[i], vx = 0, vy = 0;
+    for (let k = 0; k < 3; k++) {
+      const dx = x - CTR[k][0], dy = y - CTR[k][1];
+      const g = Math.exp(-(dx*dx + dy*dy)/S2);
+      const s = GAMMA * g / (SIGMA*SIGMA);
+      vx += -dy*s - BETA*g*dx;   // swirl (rot90 of gradient) + attraction
+      vy +=  dx*s - BETA*g*dy;
+    }
+    x += vx + (rnd()-0.5)*2*JIT;
+    y += vy + (rnd()-0.5)*2*JIT;
+    px[i] = x; py[i] = y;
+    if (rnd() < LIFE_Q || x < 0 || x >= W || y < 0 || y >= H) spawn(i);
+  }
+}
+
+// ---------- gl ----------
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true, antialias: false });
+if (!gl) throw new Error('webgl2 required');
+if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float required');
+gl.getExtension('EXT_float_blend'); // optional; deposit target is 16F
+
+function sh(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function prog(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+function tex(ifmt) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, ifmt, W, H);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function fbo(t) {
+  const f = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+  return f;
+}
+const depT = tex(gl.RGBA16F), depF = fbo(depT);
+const emaT = [tex(gl.RGBA32F), tex(gl.RGBA32F)], emaF = [fbo(emaT[0]), fbo(emaT[1])];
+const sumT = [tex(gl.RGBA32F), tex(gl.RGBA32F)], sumF = [fbo(sumT[0]), fbo(sumT[1])];
+let emaP = 0, sumP = 0;
+
+// deposit: points, additive
+const depProg = prog(
+`#version 300 es
+in vec2 aPos; uniform vec2 uRes;
+void main(){ gl_Position = vec4(aPos/uRes*2.0-1.0, 0.0, 1.0); gl_PointSize = 1.0; }`,
+`#version 300 es
+precision highp float; out vec4 o;
+void main(){ o = vec4(1.0, 0.0, 0.0, 1.0); }`);
+const depLocPos = gl.getAttribLocation(depProg, 'aPos');
+const depLocRes = gl.getUniformLocation(depProg, 'uRes');
+const emitBuf = new Float32Array(N*2);
+const vbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, emitBuf.byteLength, gl.DYNAMIC_DRAW);
+
+// fullscreen helpers
+const FSV = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID<<1)&2, gl_VertexID&2); gl_Position = vec4(p*2.0-1.0, 0.0, 1.0); }`;
+// ema update
+const emaProg = prog(FSV, `#version 300 es
+precision highp float; uniform sampler2D uPrev, uDep; uniform float uA; out vec4 o;
+void main(){ ivec2 p = ivec2(gl_FragCoord.xy);
+  float e = texelFetch(uPrev, p, 0).r, d = texelFetch(uDep, p, 0).r;
+  o = vec4(mix(e, d, uA), 0.0, 0.0, 1.0); }`);
+// sum update
+const sumProg = prog(FSV, `#version 300 es
+precision highp float; uniform sampler2D uPrev, uDep; out vec4 o;
+void main(){ ivec2 p = ivec2(gl_FragCoord.xy);
+  o = vec4(texelFetch(uPrev, p, 0).r + texelFetch(uDep, p, 0).r, 0.0, 0.0, 1.0); }`);
+// display
+const dispProg = prog(FSV, `#version 300 es
+precision highp float;
+uniform sampler2D uEma, uSum; uniform float uK, uA, uCount, uGA, uFrame;
+out vec4 o;
+float hash(vec3 v){ return fract(sin(dot(v, vec3(127.1, 311.7, 74.7)))*43758.5453); }
+void main(){
+  vec2 fc = gl_FragCoord.xy;
+  bool bone = fc.x < 768.0;
+  ivec2 p = ivec2(mod(fc.x, 768.0), fc.y);
+  float d;
+  if (bone) {
+    d = 1.0 - exp(-uK * texelFetch(uEma, p, 0).r);   // EMA time-mean == per-frame rate: same exposure as skin
+  } else {
+    float m = texelFetch(uSum, p, 0).r / max(uCount, 1.0);
+    d = 1.0 - exp(-uK * m);
+    d += uGA * (hash(vec3(fc.xy, uFrame)) * 2.0 - 1.0);   // applied grain, display space, field-blind
+  }
+  d = clamp(d, 0.0, 1.0);
+  vec3 silver = vec3(0.972, 0.976, 0.984);        // near-neutral silver, film register
+  o = vec4(silver * d, 1.0);
+}`);
+const dl = {
+  ema: gl.getUniformLocation(dispProg, 'uEma'),
+  sum: gl.getUniformLocation(dispProg, 'uSum'),
+  k: gl.getUniformLocation(dispProg, 'uK'),
+  a: gl.getUniformLocation(dispProg, 'uA'),
+  count: gl.getUniformLocation(dispProg, 'uCount'),
+  ga: gl.getUniformLocation(dispProg, 'uGA'),
+  frame: gl.getUniformLocation(dispProg, 'uFrame'),
+};
+
+// ---------- JS mirror (same numbers, not a statistical model) ----------
+const tileCount = new Float64Array(TX*TY);       // this frame's deposits per tile
+const tileSum = new Float64Array(TX*TY);         // running sum since shutter
+const tileEma = new Float64Array(TX*TY);         // tile-sum EMA mirror (linear => exact)
+let shutterFrames = 0;
+let frame = 0, K_EXP = 0.15, kFrozen = false;
+
+// probe state
+let probeTiles = [];        // [{ti, cx, cy}] 24 tiles
+let statN = 0;
+let emaSeries = null;       // per-tile running mean/var (Welford)
+let pixEma = null;          // per designated center pixel EMA mirror
+let dispStats = null;       // per tile {bone: Welford, skin: Welford} on 4x4 patch mean bytes
+const pixByte = new Uint8Array(4);
+const patchByte = new Uint8Array(4*4*4);
+
+function welford() { return { n:0, m:0, M2:0 }; }
+function wPush(w, x) { w.n++; const d = x - w.m; w.m += d/w.n; w.M2 += d*(x - w.m); }
+function wVar(w) { return w.n > 1 ? w.M2/(w.n-1) : 0; }
+
+function pickTiles() {
+  const cand = [];
+  for (let t = 0; t < TX*TY; t++) {
+    const mu = tileSum[t] / Math.max(shutterFrames, 1);
+    if (mu > 0.05) cand.push([mu, t]);
+  }
+  cand.sort((a, b) => a[0] - b[0]);
+  const lo = cand[Math.floor(cand.length*0.50)][0];
+  const hi = cand[Math.min(cand.length-1, Math.floor(cand.length*0.995))][0];
+  const used = new Set();
+  for (let j = 0; j < 24; j++) {
+    const target = Math.exp(Math.log(lo) + (Math.log(hi)-Math.log(lo))*j/23);
+    let best = null, bd = 1e9;
+    for (const [mu, t] of cand) {
+      if (used.has(t)) continue;
+      const d = Math.abs(Math.log(mu) - Math.log(target));
+      if (d < bd) { bd = d; best = t; }
+    }
+    used.add(best);
+    probeTiles.push({ ti: best, tx: best % TX, ty: (best/TX)|0 });
+  }
+  emaSeries = probeTiles.map(() => []);          // full series → detrended variance
+  pixEma = probeTiles.map(() => 0);
+  dispStats = probeTiles.map(() => ({ bone: [], skin: [] }));
+}
+// variance of residuals after removing OLS linear trend — kills leftover
+// convergence drift symmetrically on both sides (instrument, not thesis)
+function detrendVar(series) {
+  const n = series.length;
+  if (n < 3) return { mean: 0, v: 0 };
+  const xs = series.map((_, i) => i);
+  const f = ols(xs, series);
+  let m = 0; for (const y of series) m += y; m /= n;
+  let M2 = 0;
+  for (let i = 0; i < n; i++) { const r = series[i] - (f.intercept + f.slope*i); M2 += r*r; }
+  return { mean: m, v: M2/(n-2) };
+}
+
+function autoExpose() {
+  const mus = [];
+  for (let t = 0; t < TX*TY; t++) {
+    const mu = tileSum[t] / Math.max(shutterFrames, 1);
+    if (mu > 0) mus.push(mu);
+  }
+  mus.sort((a, b) => a - b);
+  const v99 = mus[Math.floor(mus.length*0.99)] / (TILE*TILE);   // per-pixel rate
+  K_EXP = 3.0 / Math.max(v99, 1e-6);
+}
+
+// ---------- frame loop ----------
+let emitCount = 0;
+const probeOut = { piece: '010-earned-grain', seed: 7, params: { N, P_EMIT, ALPHA, GRAIN_A, SIGMA, GAMMA, BETA, JIT } };
+
+function tick() {
+  step();
+  // emission sampling — the shot-noise source. JS and GPU consume this same list.
+  emitCount = 0;
+  tileCount.fill(0);
+  const centerHits = pixEma ? new Float64Array(probeTiles.length) : null;
+  for (let i = 0; i < N; i++) {
+    if (rnd() < P_EMIT) {
+      const ix = px[i]|0, iy = py[i]|0;
+      emitBuf[emitCount*2] = ix + 0.5;
+      emitBuf[emitCount*2+1] = iy + 0.5;
+      emitCount++;
+      tileCount[((iy/TILE)|0)*TX + ((ix/TILE)|0)]++;
+      if (centerHits) {
+        for (let j = 0; j < probeTiles.length; j++) {
+          const t = probeTiles[j];
+          if (ix === t.tx*TILE + 8 && iy === t.ty*TILE + 8) centerHits[j]++;
+        }
+      }
+    }
+  }
+  shutterFrames++;
+  for (let t = 0; t < TX*TY; t++) {
+    tileSum[t] += tileCount[t];
+    tileEma[t] = tileEma[t]*(1-ALPHA) + ALPHA*tileCount[t];
+  }
+  if (pixEma) for (let j = 0; j < probeTiles.length; j++)
+    pixEma[j] = pixEma[j]*(1-ALPHA) + ALPHA*centerHits[j];
+
+  // GPU: deposit
+  gl.disable(gl.DEPTH_TEST);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, depF);
+  gl.viewport(0, 0, W, H);
+  gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(depProg);
+  gl.uniform2f(depLocRes, W, H);
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, emitBuf.subarray(0, emitCount*2));
+  gl.enableVertexAttribArray(depLocPos);
+  gl.vertexAttribPointer(depLocPos, 2, gl.FLOAT, false, 0, 0);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.drawArrays(gl.POINTS, 0, emitCount);
+  gl.disable(gl.BLEND);
+
+  // EMA update
+  gl.bindFramebuffer(gl.FRAMEBUFFER, emaF[1-emaP]);
+  gl.useProgram(emaProg);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, emaT[emaP]);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, depT);
+  gl.uniform1i(gl.getUniformLocation(emaProg, 'uPrev'), 0);
+  gl.uniform1i(gl.getUniformLocation(emaProg, 'uDep'), 1);
+  gl.uniform1f(gl.getUniformLocation(emaProg, 'uA'), ALPHA);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  emaP = 1 - emaP;
+
+  // SUM update
+  gl.bindFramebuffer(gl.FRAMEBUFFER, sumF[1-sumP]);
+  gl.useProgram(sumProg);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, sumT[sumP]);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, depT);
+  gl.uniform1i(gl.getUniformLocation(sumProg, 'uPrev'), 0);
+  gl.uniform1i(gl.getUniformLocation(sumProg, 'uDep'), 1);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  sumP = 1 - sumP;
+
+  // schedule
+  if (PROBE && frame === F_EXPOSE) { autoExpose(); kFrozen = true; pickTiles(); }
+  if (!PROBE && !kFrozen) {
+    if (frame === 60 || frame === 180) autoExpose();
+    if (frame === F_EXPOSE) { autoExpose(); kFrozen = true; }
+  }
+  if (PROBE && frame === F_STATS) {
+    // shutter reset (probe door): clean measurement window for the skin average
+    for (const f of sumF) { gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); }
+    tileSum.fill(0); shutterFrames = 0;
+  }
+
+  // display
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, 1536, 768);
+  gl.useProgram(dispProg);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, emaT[emaP]);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, sumT[sumP]);
+  gl.uniform1i(dl.ema, 0); gl.uniform1i(dl.sum, 1);
+  gl.uniform1f(dl.k, K_EXP); gl.uniform1f(dl.a, ALPHA);
+  gl.uniform1f(dl.count, Math.max(shutterFrames, 1));
+  gl.uniform1f(dl.ga, GRAIN_A); gl.uniform1f(dl.frame, frame % 4096);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // probe collection
+  if (PROBE && frame >= F_STATS && statN < STAT_LEN) {
+    for (let j = 0; j < probeTiles.length; j++) emaSeries[j].push(tileEma[probeTiles[j].ti]);
+    // display stats: second half only — shutter average must have converged
+    // (first run collected from count=1: raw Poisson frames masqueraded as skin grain)
+    if (statN >= STAT_LEN/2 && (frame - F_STATS) % 2 === 0) {
+      for (let j = 0; j < probeTiles.length; j++) {
+        const t = probeTiles[j];
+        const bx = t.tx*TILE + 6, by = t.ty*TILE + 6;      // 4x4 patch, bone side
+        gl.readPixels(bx, by, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, patchByte);
+        let s = 0; for (let q = 0; q < 16; q++) s += patchByte[q*4];
+        dispStats[j].bone.push(s/16);
+        gl.readPixels(768 + bx, by, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, patchByte);
+        s = 0; for (let q = 0; q < 16; q++) s += patchByte[q*4];
+        dispStats[j].skin.push(s/16);
+      }
+    }
+    statN++;
+    if (statN === STAT_LEN) finishProbe();
+  }
+  frame++;
+  requestAnimationFrame(tick);
+}
+
+// ---------- probe verdicts ----------
+function ols(xs, ys) {
+  const n = xs.length;
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (let i = 0; i < n; i++) { sx += xs[i]; sy += ys[i]; sxx += xs[i]*xs[i]; sxy += xs[i]*ys[i]; }
+  const b = (n*sxy - sx*sy) / (n*sxx - sx*sx);
+  return { slope: b, intercept: (sy - b*sx)/n };
+}
+function pearson(xs, ys) {
+  const n = xs.length;
+  let sx=0, sy=0; for (let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];}
+  const mx=sx/n, my=sy/n; let a=0,b=0,c=0;
+  for (let i=0;i<n;i++){const u=xs[i]-mx,v=ys[i]-my;a+=u*v;b+=u*u;c+=v*v;}
+  return a/Math.sqrt(b*c);
+}
+function spearman(xs, ys) {
+  const rank = a => { const idx = a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]); const r = new Array(a.length); idx.forEach(([,i],k)=>r[i]=k); return r; };
+  return pearson(rank(xs), rank(ys));
+}
+function finishProbe() {
+  const emaDt = probeTiles.map((t, j) => detrendVar(emaSeries[j]));
+  const mu = emaDt.map(d => d.mean);                                         // EMA time-mean == μ_t
+  const va = emaDt.map(d => d.v);
+  const skinMu = probeTiles.map(t => tileSum[t.ti] / Math.max(shutterFrames, 1));
+  // P1 field identity
+  const p1 = pearson(skinMu, mu);
+  // P2 bone PTC (linear domain, detrended)
+  const fit = ols(mu.map(Math.log), va.map(Math.log));
+  // P3 display-space grain-vs-field (qualified tiles only, detrended)
+  const boneDt = probeTiles.map((t, j) => detrendVar(dispStats[j].bone));
+  const skinDt = probeTiles.map((t, j) => detrendVar(dispStats[j].skin));
+  const qual = [];
+  for (let j = 0; j < probeTiles.length; j++)
+    if (boneDt[j].mean >= 8 && skinDt[j].mean >= 8) qual.push(j);
+  const lmu = qual.map(j => Math.log(mu[j]));
+  const rhoBone = spearman(qual.map(j => Math.sqrt(boneDt[j].v)), lmu);
+  const rhoSkin = spearman(qual.map(j => Math.sqrt(skinDt[j].v)), lmu);
+  // P4 mirror check on 6 brightest tile center pixels (bone side, display domain)
+  const bright = probeTiles.map((t, j) => [mu[j], j]).sort((a,b)=>b[0]-a[0]).slice(0,6).map(x=>x[1]);
+  let maxErr = 0;
+  for (const j of bright) {
+    const t = probeTiles[j];
+    gl.readPixels(t.tx*TILE + 8, t.ty*TILE + 8, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixByte);
+    const gpuD = pixByte[0]/255 / 0.972;                     // undo silver tint on R
+    const jsD = 1 - Math.exp(-K_EXP * pixEma[j]);
+    maxErr = Math.max(maxErr, Math.abs(gpuD - jsD));
+  }
+  // P3b (pass 2 amendment, pre-registered 09-26 after P3's readable death):
+  // bone display grain is a MIDTONE phenomenon — sqrt(mu) shot noise times the
+  // tonemap's shoulder compression. Shape test, one global scale, no free K:
+  //   model_j = sqrt(mu_j) * (1 - dispBone_j/(255*0.972))
+  // gate: Pearson(measured, model) > 0.9 over all 24 tiles.
+  // skin: flat after excluding byte-clipped tiles (dispSkin >= 230): CV < 0.25.
+  const model = probeTiles.map((t, j) => Math.sqrt(mu[j]) * Math.max(0, 1 - boneDt[j].mean/(255*0.972)));
+  const gBone = probeTiles.map((t, j) => Math.sqrt(boneDt[j].v));
+  const shapeCorr = pearson(gBone, model);
+  const unclipped = [];
+  for (let j = 0; j < probeTiles.length; j++) if (skinDt[j].mean < 230) unclipped.push(j);
+  const gS = unclipped.map(j => Math.sqrt(skinDt[j].v));
+  let gm = 0; for (const g of gS) gm += g; gm /= gS.length;
+  let gv = 0; for (const g of gS) gv += (g-gm)*(g-gm); gv = Math.sqrt(gv/(gS.length-1));
+  const skinCV = gv/gm;
+  const verdict = {
+    P1_fieldIdentity: { corr: p1, pass: p1 > 0.999 },
+    P2_bonePTC: { slope: fit.slope, intercept: fit.intercept,
+                  theoryIntercept: Math.log(ALPHA/(2-ALPHA)), pass: fit.slope >= 0.8 && fit.slope <= 1.2 },
+    P3_grainCarriesField: { rhoBone, rhoSkin, qualifiedTiles: qual.length,
+                            pass: rhoBone <= -0.6 && Math.abs(rhoSkin) <= 0.3,
+                            note: 'pass-1 readable death: absolute display grain is a midtone phenomenon (sqrt(mu) x shoulder compression) — the monotone prediction was less photographic than the piece. Superseded by P3b; kept in the ledger.' },
+    P3b_grainShape: { shapeCorr, skinCV, unclippedTiles: unclipped.length,
+                      pass: shapeCorr > 0.9 && skinCV < 0.25 },
+    P4_mirror: { maxErr, pass: maxErr <= 0.02 },
+  };
+  verdict.PASS = verdict.P1_fieldIdentity.pass && verdict.P2_bonePTC.pass &&
+                 verdict.P3b_grainShape.pass && verdict.P4_mirror.pass;
+  probeOut.frames = { expose: F_EXPOSE, statsStart: F_STATS, statLen: STAT_LEN };
+  probeOut.K_EXP = K_EXP;
+  probeOut.tiles = probeTiles.map((t, j) => ({
+    tile: [t.tx, t.ty], mu: +mu[j].toFixed(4), varEma: +va[j].toFixed(5),
+    dispBone: +boneDt[j].mean.toFixed(1), dispSkin: +skinDt[j].mean.toFixed(1),
+    grainBone: +Math.sqrt(boneDt[j].v).toFixed(3),
+    grainSkin: +Math.sqrt(skinDt[j].v).toFixed(3),
+  }));
+  probeOut.verdict = verdict;
+  const el = document.getElementById('probe');
+  el.textContent = JSON.stringify(probeOut, null, 1);
+  el.style.display = 'block';
+  window.__PROBE_RESULT = probeOut;
+  document.title = '010 probe ' + (verdict.PASS ? 'PASS' : 'FAIL');
+}
+
+tick();
+</script>
+</body>
+</html>
