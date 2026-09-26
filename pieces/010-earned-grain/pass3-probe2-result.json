@@ -1,0 +1,76 @@
+{
+ "piece": "010-earned-grain",
+ "seed": 7,
+ "params": {
+  "N": 200000,
+  "P_EMIT": 0.08,
+  "ALPHA": 0.3,
+  "GRAIN_A": 0.05,
+  "SIGMA": 110,
+  "GAMMA": 254,
+  "BETA": 0.00225,
+  "JIT": 0.45
+ },
+ "ladder": [
+  0.6,
+  0.45,
+  0.3,
+  0.2,
+  0.12,
+  0.08,
+  0.05,
+  0.03
+ ],
+ "phase": {
+  "P5_START": 1200,
+  "P5_END": 2400,
+  "SEG_COLLECT": 300
+ },
+ "K_EXP": 5.144515493146267,
+ "verdict3": {
+  "P5_shutterLaw": {
+   "slope": 0.7467883907958953,
+   "persistenceFactor": 0.861,
+   "Vbar": [
+    0.4675,
+    0.3377,
+    0.229,
+    0.1639,
+    0.1117,
+    0.08272,
+    0.05721,
+    0.03653
+   ],
+   "pass": false
+  },
+  "P6_shutterDeath": {
+   "sigmaBone": [
+    23.741,
+    21.754,
+    18.905,
+    16.948,
+    13.244,
+    10,
+    7.681,
+    6.104
+   ],
+   "sigmaSkin": [
+    1.801,
+    1.786,
+    1.749,
+    1.831,
+    1.747,
+    1.775,
+    1.85,
+    1.823
+   ],
+   "sigmaSkinRef": 1.794,
+   "skinFlatCV": 0.021,
+   "shapeCorr": 0.9742560656153315,
+   "alphaStar": null,
+   "qualifiedTiles": 12,
+   "pass": false
+  },
+  "PASS": false
+ }
+}
