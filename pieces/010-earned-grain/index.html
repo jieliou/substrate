@@ -81,6 +81,33 @@
   (無自由參數);皮相顆粒被證明全盲:去掉裁切後平坦到 CV 8.6%。
   裁決規則自此有了儀器版:問一張圖的 grain 是長的還是貼的,
   = 量它的顆粒幅度是被場的形狀鎖住,還是一條平線。
+
+  ══ pass 3 預註冊(α 曝光軸 — 快門與骨相之死;跑 ?probe=2 前寫定)══
+  問:pass 2 證明了骨相顆粒的「出身」(被場鎖形)。但出身不是全部 —
+  grain 是有限記憶的殘響,α 是快門(EMA 記憶長度 1/α)。右皮相的製程
+  本來就是左骨相的 α→0 極限(快門自載入常開)+ 一層謊。所以「第三面板
+  (converged bone = 骨相之死)」不必畫:它是一個極限,給它一個讀數。
+  理論(零自由參數):EMA 穩態變異 Var = Var(X)·α/(2−α)。
+  P5 快門定律(線性域,JS 鏡像):8 檔快門 [0.6,0.45,0.3,0.2,0.12,0.08,
+     0.05,0.03] **平行**跑在同一串發射數字上(α 不碰 rnd — 字面同一批
+     光子,八種快門)。Phase B 1200 幀,24 tile 的 detrended Var(EMA_k)/μ
+     取均,log-log 對 α/(2−α) 的 OLS 斜率 ∈ [0.9, 1.1]。
+     截距讀數 = 持續性因子(pass 1 量得 ~1.26;讀數,不設門)。
+     具名替代結局:最慢兩檔壓在線下 → 去趨勢窗吃掉 1/α 級的真實慢喘
+     (n_eff(0.03)≈18/tile,靠 24-tile 平均壓到 ~7%)— 儀器死,修窗不修門。
+  P6 快門之死(display space,讀真渲染位元組):Phase C 逐檔設 GPU α
+     (settle 8/α 後每 2 幀收樣,150 樣本/檔)。合格 tile 以第一檔判定
+     (骨相均值 ∈[40,200]、皮相 <230):
+     (a) 形狀:σ_bone(α) 對 √(α/(2−α)) 的 Pearson > 0.95;
+     (b) 交叉:σ_bone(0.6) > median σ_skin 且 σ_bone(0.03) < median σ_skin
+     → 報 α*(對數內插)= **你不得不開始造假的快門速度**。
+     皮相平坦度 CV 為控制讀數(α 不該碰它;讀數,不設門)。
+     具名替代結局 1:全梯無交叉(骨相恆響)→ 誠實 FAIL:皮相從頭就比
+     生命安靜 — 010 的對比原來由形狀攜帶,不是幅度。
+     具名替代結局 2:僅 display 尾端塌陷(P5 線性域無恙)→ byte 量化
+     地板先於快門殺死顆粒 — 顯示器的位元深度是另一台顯影器。
+  live 門:?alpha= 調骨相快門(皮相不動)— 用眼睛先走一遍 P6。
+  門檻寫定於此,跑後不動。
 -->
 <head>
 <meta charset="utf-8">
@@ -111,15 +138,23 @@
 'use strict';
 // ---------- params ----------
 const W = 768, H = 768, TILE = 16, TX = W/TILE, TY = H/TILE;
-const N = 200000, P_EMIT = 0.08, ALPHA = 0.30, GRAIN_A = 0.05;
+const Q = new URLSearchParams(location.search);
+// pass-3 shutter door: ?alpha= overrides the bone's EMA memory length (skin untouched)
+const A_DOOR = parseFloat(Q.get('alpha') || '0.30');
+const N = 200000, P_EMIT = 0.08, GRAIN_A = 0.05;
+const ALPHA = Math.min(0.95, Math.max(0.005, isFinite(A_DOOR) ? A_DOOR : 0.30));
 const SIGMA = 110, GAMMA = 254, BETA = 0.00225, JIT = 0.45;
 const LIFE_Q = 1/240, SPAWN_R = 350;
-const Q = new URLSearchParams(location.search);
 const PROBE = Q.get('probe') === '1';
+const PROBE2 = Q.get('probe') === '2';            // pass 3: shutter sweep
+const PROBING = PROBE || PROBE2;
 const STAT_LEN = parseInt(Q.get('frames') || '600', 10);
+const A_LADDER = [0.6, 0.45, 0.3, 0.2, 0.12, 0.08, 0.05, 0.03];
+const P5_START = 1200, P5_END = 2400;             // probe-2 phase B window
+const SEG_COLLECT = 300;                          // probe-2 phase C per-α frames (every 2 → 150 samples)
 // probe warmup 1200: core-filling relaxation ~ lifetime 240f x spiral-in 1/beta ~444f;
 // first run (warmup 450) put Fano~11 drift into dense tiles — trend, not fluctuation.
-const F_EXPOSE = PROBE ? 1100 : 400, F_STATS = PROBE ? 1200 : 450;
+const F_EXPOSE = PROBING ? 1100 : 400, F_STATS = PROBING ? 1200 : 450;
 
 // ---------- rng (xorshift32, seed 7) ----------
 let rs = 7 >>> 0;
@@ -278,6 +313,12 @@ let statN = 0;
 let emaSeries = null;       // per-tile running mean/var (Welford)
 let pixEma = null;          // per designated center pixel EMA mirror
 let dispStats = null;       // per tile {bone: Welford, skin: Welford} on 4x4 patch mean bytes
+// probe-2 state (pass 3)
+const mirrors = PROBE2 ? A_LADDER.map(() => new Float64Array(TX*TY)) : null;
+let p5Series = null;        // [k][j]: mirrors[k] series at probe tile j (phase B)
+let p6Stats = null;         // [k][j]: {bone:[], skin:[]} display patch means (phase C)
+let segK = -1, segMode = 'idle', segT = 0;
+let curA = ALPHA;           // GPU EMA coefficient — phase C sweeps this; live/probe-1 constant
 const pixByte = new Uint8Array(4);
 const patchByte = new Uint8Array(4*4*4);
 
@@ -306,9 +347,15 @@ function pickTiles() {
     used.add(best);
     probeTiles.push({ ti: best, tx: best % TX, ty: (best/TX)|0 });
   }
-  emaSeries = probeTiles.map(() => []);          // full series → detrended variance
-  pixEma = probeTiles.map(() => 0);
-  dispStats = probeTiles.map(() => ({ bone: [], skin: [] }));
+  if (PROBE) {
+    emaSeries = probeTiles.map(() => []);        // full series → detrended variance
+    pixEma = probeTiles.map(() => 0);
+    dispStats = probeTiles.map(() => ({ bone: [], skin: [] }));
+  }
+  if (PROBE2) {
+    p5Series = A_LADDER.map(() => probeTiles.map(() => []));
+    p6Stats = A_LADDER.map(() => probeTiles.map(() => ({ bone: [], skin: [] })));
+  }
 }
 // variance of residuals after removing OLS linear trend — kills leftover
 // convergence drift symmetrically on both sides (instrument, not thesis)
@@ -364,6 +411,12 @@ function tick() {
     tileSum[t] += tileCount[t];
     tileEma[t] = tileEma[t]*(1-ALPHA) + ALPHA*tileCount[t];
   }
+  // probe 2: eight parallel shutters over the SAME emission stream (α never touches rnd —
+  // literally the same photons, eight memories). Warm from frame 0.
+  if (PROBE2) for (let k = 0; k < A_LADDER.length; k++) {
+    const a = A_LADDER[k], m = mirrors[k];
+    for (let t = 0; t < TX*TY; t++) m[t] = m[t]*(1-a) + a*tileCount[t];
+  }
   if (pixEma) for (let j = 0; j < probeTiles.length; j++)
     pixEma[j] = pixEma[j]*(1-ALPHA) + ALPHA*centerHits[j];
 
@@ -389,7 +442,7 @@ function tick() {
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, depT);
   gl.uniform1i(gl.getUniformLocation(emaProg, 'uPrev'), 0);
   gl.uniform1i(gl.getUniformLocation(emaProg, 'uDep'), 1);
-  gl.uniform1f(gl.getUniformLocation(emaProg, 'uA'), ALPHA);
+  gl.uniform1f(gl.getUniformLocation(emaProg, 'uA'), curA);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   emaP = 1 - emaP;
 
@@ -404,8 +457,8 @@ function tick() {
   sumP = 1 - sumP;
 
   // schedule
-  if (PROBE && frame === F_EXPOSE) { autoExpose(); kFrozen = true; pickTiles(); }
-  if (!PROBE && !kFrozen) {
+  if (PROBING && frame === F_EXPOSE) { autoExpose(); kFrozen = true; pickTiles(); }
+  if (!PROBING && !kFrozen) {
     if (frame === 60 || frame === 180) autoExpose();
     if (frame === F_EXPOSE) { autoExpose(); kFrozen = true; }
   }
@@ -446,6 +499,38 @@ function tick() {
     }
     statN++;
     if (statN === STAT_LEN) finishProbe();
+  }
+  // probe 2 — phase B: linear-domain series, eight shutters, same numbers
+  if (PROBE2 && frame >= P5_START && frame < P5_END) {
+    for (let j = 0; j < probeTiles.length; j++) {
+      const ti = probeTiles[j].ti;
+      for (let k = 0; k < A_LADDER.length; k++) p5Series[k][j].push(mirrors[k][ti]);
+    }
+    if (frame === P5_END - 1) { segK = 0; segMode = 'settle'; segT = 0; curA = A_LADDER[0]; }
+  }
+  // probe 2 — phase C: sequential GPU shutter segments, display-space patches
+  if (PROBE2 && segK >= 0 && segMode !== 'done') {
+    segT++;
+    if (segMode === 'settle' && segT >= Math.ceil(8 / A_LADDER[segK])) { segMode = 'collect'; segT = 0; }
+    else if (segMode === 'collect') {
+      if (segT % 2 === 0) {
+        for (let j = 0; j < probeTiles.length; j++) {
+          const t = probeTiles[j];
+          const bx = t.tx*TILE + 6, by = t.ty*TILE + 6;
+          gl.readPixels(bx, by, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, patchByte);
+          let s = 0; for (let q = 0; q < 16; q++) s += patchByte[q*4];
+          p6Stats[segK][j].bone.push(s/16);
+          gl.readPixels(768 + bx, by, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, patchByte);
+          s = 0; for (let q = 0; q < 16; q++) s += patchByte[q*4];
+          p6Stats[segK][j].skin.push(s/16);
+        }
+      }
+      if (segT >= SEG_COLLECT) {
+        segK++;
+        if (segK >= A_LADDER.length) { segMode = 'done'; finishProbe2(); }
+        else { segMode = 'settle'; segT = 0; curA = A_LADDER[segK]; }
+      }
+    }
   }
   frame++;
   requestAnimationFrame(tick);
@@ -541,6 +626,67 @@ function finishProbe() {
   window.__PROBE_RESULT = probeOut;
   document.title = '010 probe ' + (verdict.PASS ? 'PASS' : 'FAIL');
 }
+
+// ---------- pass 3 verdicts (probe 2) ----------
+function median(a) { const s = [...a].sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n-1)/2] : (s[n/2-1] + s[n/2])/2; }
+function finishProbe2() {
+  // P5 — shutter law, linear domain. μ per tile from the slowest mirror (tightest estimator of the same μ).
+  const muJ = probeTiles.map((t, j) => detrendVar(p5Series[A_LADDER.length-1][j]).mean);
+  const xk = A_LADDER.map(a => Math.log(a/(2-a)));
+  const Vbar = A_LADDER.map((a, k) => {
+    let s = 0;
+    for (let j = 0; j < probeTiles.length; j++) s += detrendVar(p5Series[k][j]).v / Math.max(muJ[j], 1e-9);
+    return s / probeTiles.length;
+  });
+  const fit5 = ols(xk, Vbar.map(Math.log));
+  // P6 — shutter death, display domain.
+  const seg = A_LADDER.map((a, k) => probeTiles.map((t, j) => ({
+    b: detrendVar(p6Stats[k][j].bone), s: detrendVar(p6Stats[k][j].skin) })));
+  const qual = [];
+  for (let j = 0; j < probeTiles.length; j++) {
+    const b0 = seg[0][j].b.mean, s0 = seg[0][j].s.mean;
+    if (b0 >= 40 && b0 <= 200 && s0 < 230) qual.push(j);
+  }
+  const sigB = A_LADDER.map((a, k) => { let s = 0; for (const j of qual) s += Math.sqrt(seg[k][j].b.v); return s/qual.length; });
+  const sigS = A_LADDER.map((a, k) => { let s = 0; for (const j of qual) s += Math.sqrt(seg[k][j].s.v); return s/qual.length; });
+  const modelK = A_LADDER.map(a => Math.sqrt(a/(2-a)));
+  const shape = pearson(sigB, modelK);
+  const sRef = median(sigS);
+  let sm = 0; for (const v of sigS) sm += v; sm /= sigS.length;
+  let sv = 0; for (const v of sigS) sv += (v-sm)*(v-sm);
+  const skinFlatCV = Math.sqrt(sv/(sigS.length-1))/sm;
+  const crossing = sigB[0] > sRef && sigB[A_LADDER.length-1] < sRef;
+  let alphaStar = null;
+  for (let k = 1; k < A_LADDER.length; k++) {
+    if (sigB[k-1] >= sRef && sigB[k] < sRef) {
+      const u = (Math.log(sigB[k-1]) - Math.log(sRef)) / (Math.log(sigB[k-1]) - Math.log(sigB[k]));
+      alphaStar = +Math.exp(Math.log(A_LADDER[k-1]) + u*(Math.log(A_LADDER[k]) - Math.log(A_LADDER[k-1]))).toFixed(4);
+      break;
+    }
+  }
+  const verdict = {
+    P5_shutterLaw: { slope: fit5.slope, persistenceFactor: +Math.exp(fit5.intercept).toFixed(3),
+                     Vbar: Vbar.map(v => +v.toExponential(3)),
+                     pass: fit5.slope >= 0.9 && fit5.slope <= 1.1 },
+    P6_shutterDeath: { sigmaBone: sigB.map(v => +v.toFixed(3)), sigmaSkin: sigS.map(v => +v.toFixed(3)),
+                       sigmaSkinRef: +sRef.toFixed(3), skinFlatCV: +skinFlatCV.toFixed(3),
+                       shapeCorr: shape, alphaStar, qualifiedTiles: qual.length,
+                       pass: shape > 0.95 && crossing },
+  };
+  verdict.PASS = verdict.P5_shutterLaw.pass && verdict.P6_shutterDeath.pass;
+  probeOut.ladder = A_LADDER;
+  probeOut.phase = { P5_START, P5_END, SEG_COLLECT };
+  probeOut.K_EXP = K_EXP;
+  probeOut.verdict3 = verdict;
+  const el = document.getElementById('probe');
+  el.textContent = JSON.stringify(probeOut, null, 1);
+  el.style.display = 'block';
+  window.__PROBE_RESULT = probeOut;
+  document.title = '010 probe2 ' + (verdict.PASS ? 'PASS' : 'FAIL');
+}
+
+if (Q.has('alpha')) document.getElementById('tagL').innerHTML =
+  '骨相 — 長出來的 <em>photon-counted · α=' + ALPHA + '</em>';
 
 tick();
 </script>
