@@ -1,0 +1,135 @@
+{
+ "piece": "010-earned-grain",
+ "seed": 7,
+ "params": {
+  "N": 200000,
+  "P_EMIT": 0.08,
+  "ALPHA": 0.3,
+  "GRAIN_A": 0.05,
+  "SIGMA": 110,
+  "GAMMA": 254,
+  "BETA": 0.00225,
+  "JIT": 0.45
+ },
+ "frames": {
+  "expose": 1100,
+  "statsStart": 1200,
+  "T3": 900,
+  "MAXLAG3": 40
+ },
+ "K_EXP": 5.144515493146267,
+ "verdict4": {
+  "P7_boneRemembers": {
+   "r1lin": 0.7789,
+   "theoryWhite": 0.7,
+   "ex5lin": 2.105,
+   "pass": true
+  },
+  "P8_skinForgets": {
+   "lags": [
+    {
+     "k": 1,
+     "absMed": 0.054
+    },
+    {
+     "k": 2,
+     "absMed": 0.0576
+    },
+    {
+     "k": 3,
+     "absMed": 0.043
+    },
+    {
+     "k": 5,
+     "absMed": 0.0757
+    },
+    {
+     "k": 8,
+     "absMed": 0.0621
+    }
+   ],
+   "pass": true
+  },
+  "P9_displayTranslation": {
+   "r1dispBone": 0.834,
+   "attenuation": 1.071,
+   "pass": true
+  },
+  "readings": {
+   "lags": [
+    1,
+    2,
+    3,
+    5,
+    8,
+    13,
+    21,
+    34
+   ],
+   "acfLin": [
+    0.7789,
+    0.6178,
+    0.5042,
+    0.3537,
+    0.2613,
+    0.1788,
+    0.0711,
+    0.0046
+   ],
+   "acfBoneTile": [
+    0.834,
+    0.6933,
+    0.5695,
+    0.4062,
+    0.3028,
+    0.2182,
+    0.0864,
+    -0.0089
+   ],
+   "acfSkinTile": [
+    0.054,
+    0.0576,
+    0.0375,
+    0.0757,
+    0.0621,
+    0.038,
+    0.0547,
+    0.0735
+   ],
+   "acfBonePatch": [
+    0.8091,
+    0.6378,
+    0.4818,
+    0.2673,
+    0.0828,
+    0.0168,
+    0.0061,
+    0.005
+   ],
+   "acfSkinPatch": [
+    0.017,
+    0.0167,
+    -0.0002,
+    0.0067,
+    0.0229,
+    0.0228,
+    0.0349,
+    -0.0076
+   ],
+   "excessVsWhite": {
+    "lin5": 2.105,
+    "boneTile5": 2.417,
+    "bonePatch5": 1.591
+   },
+   "tauInt": {
+    "theoryEmaWhite": 5.67,
+    "lin": 13.4,
+    "boneTile": 15.05,
+    "bonePatch": 7.65,
+    "skinTile": 4
+   },
+   "qualifiedTiles": 15
+  },
+  "PASS": true
+ }
+}
