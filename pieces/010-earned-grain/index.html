@@ -136,6 +136,39 @@
   門檻未動,死亡入帳。下一拍候選:顆粒的時間色(量 display grain 的
   自相關 — 骨相紅、皮相白;把 pass 3 的頻譜讀數變成第三台判別儀器)、
   知覺拍(暗處喘亮處定的呼吸能不能被看/聽出來)。
+
+  ══ pass 4 預註冊(顆粒的餘響 — 時間自相關;跑 ?probe=3 前寫定)══
+  問:pass 2 問顆粒知不知道場在哪(空間),pass 3 問顆粒的記憶怎麼被
+  快門掃出來(頻寬)。pass 4 直接對顆粒把脈:量顯示顆粒的時間自相關。
+  理論(零自由參數):EMA(α=0.3)餵白噪聲 → ρ(k) = (1−α)^k,lag-1 恰
+  0.700,一格都不能多。pass 3 已證輸入是紅的(tile 尺度紅 share ≈0.23,
+  由 Vbar 比值 1.298 分解),紅輸入只會抬高 ACF:預測 ρ(1) ≈ 0.77,
+  且 ρ(k) 不照 (1−α)^k 死,落在滯留記憶扛著的高原上(share 模型:
+  ρ(k) ≈ 0.77·0.7^k + 0.23·慢成分)。皮相 hash 每幀重擲 — 字面白,
+  ACF 第一格就該歸零。量測:900 幀逐幀收樣,OLS 去趨勢殘差,ACF 到
+  lag 40;合格 tile 同 pass 3(骨相均值 ∈[40,200]、皮相 <230)。
+  P7 骨相記得(線性域 JS 鏡像 tileEma,tile 尺度):
+     (a) median ρ(1) ≥ 0.72 — 白輸入理論恰 0.700:過這道門「必須」靠
+         輸入自己的記憶,EMA 一個人到不了;
+     (b) median ρ(5)/0.7⁵ ≥ 1.3 — 白=1.0,share 模型預測 ≈2.1。
+  P8 皮相忘記(display 位元組,tile 尺度):median |ρ(1)| ≤ 0.10 且
+     k∈{2,3,5,8} 全部 median |ρ(k)| ≤ 0.10。
+  P9 顯示翻譯(display 骨相,tile 尺度):ρ(1) ≥ 0.5(寬容門 — tonemap
+     非線性稀釋相關[Hermite 衰減];衰減因子 ρ_disp(1)/ρ_lin(1) 為讀數)。
+  讀數(不設門):高原 ρ(13/21/34)— 900 幀窗對 ~380 幀記憶 n_eff≈2,
+     realization variance 大,誠實標註;積分記憶時間 τ_int = 1+2Σρ
+     (EMA 白輸入理論 5.67,截到 lag 40);雙孔徑對照 — 4×4 patch 的
+     紅 excess 應遠小於 16×16 tile(share ∝ 孔徑面積:記憶是群體性質,
+     孔徑越小越聽不見);皮相 τ_int(理論 ≈1)。
+  具名替代結局(事先寫下):
+     1. P7a 落 [0.68,0.72) → lag-1 對記憶失明(share 模型錯)→ 看 ρ(5)。
+     2. P7a 過但 P7b 敗 → 記憶存在但比滯留時標快(pass 3 AR(1) 不收斂
+        預告的混合物,重心在短時標)。
+     3. P8 敗 → 貼的顆粒有自己的脈搏 — hash 不白,謊有指紋(報 lag)。
+     4. P9 敗而 P7 過 → 顯示鏈把記憶洗掉(tonemap/量化衰減)—
+        世界記得,螢幕忘了。線性孿生負責裁決世界那一半。
+  去趨勢署名:OLS 去趨勢對 ~窗長慢成分有壓低偏置(lag 34 約 −4%)—
+     儀器特性,不動門檻。門檻寫定於此,跑後不動。
 -->
 <head>
 <meta charset="utf-8">
@@ -175,7 +208,8 @@ const SIGMA = 110, GAMMA = 254, BETA = 0.00225, JIT = 0.45;
 const LIFE_Q = 1/240, SPAWN_R = 350;
 const PROBE = Q.get('probe') === '1';
 const PROBE2 = Q.get('probe') === '2';            // pass 3: shutter sweep
-const PROBING = PROBE || PROBE2;
+const PROBE3 = Q.get('probe') === '3';            // pass 4: temporal color (ACF)
+const PROBING = PROBE || PROBE2 || PROBE3;
 const STAT_LEN = parseInt(Q.get('frames') || '600', 10);
 const A_LADDER = [0.6, 0.45, 0.3, 0.2, 0.12, 0.08, 0.05, 0.03];
 const P5_START = 1200, P5_END = 2400;             // probe-2 phase B window
@@ -349,6 +383,11 @@ let segK = -1, segMode = 'idle', segT = 0;
 let curA = ALPHA;           // GPU EMA coefficient — phase C sweeps this; live/probe-1 constant
 const pixByte = new Uint8Array(4);
 const patchByte = new Uint8Array(4*4*4);
+// probe-3 state (pass 4): per-frame series at two apertures + linear mirror
+const T3 = 900, MAXLAG3 = 40;
+let p7Series = null;        // [j] = { boneT, skinT, boneP, skinP, lin } (T3-frame series)
+let p7n = 0;
+const frameByte = PROBE3 ? new Uint8Array(1536*768*4) : null;  // one sync per frame, extract in JS
 
 function welford() { return { n:0, m:0, M2:0 }; }
 function wPush(w, x) { w.n++; const d = x - w.m; w.m += d/w.n; w.M2 += d*(x - w.m); }
@@ -384,6 +423,7 @@ function pickTiles() {
     p5Series = A_LADDER.map(() => probeTiles.map(() => []));
     p6Stats = A_LADDER.map(() => probeTiles.map(() => ({ bone: [], skin: [] })));
   }
+  if (PROBE3) p7Series = probeTiles.map(() => ({ boneT: [], skinT: [], boneP: [], skinP: [], lin: [] }));
 }
 // variance of residuals after removing OLS linear trend — kills leftover
 // convergence drift symmetrically on both sides (instrument, not thesis)
@@ -535,6 +575,20 @@ function tick() {
       for (let k = 0; k < A_LADDER.length; k++) p5Series[k][j].push(mirrors[k][ti]);
     }
     if (frame === P5_END - 1) { segK = 0; segMode = 'settle'; segT = 0; curA = A_LADDER[0]; }
+  }
+  // probe 3 — pass 4: per-frame samples, two apertures, both sides + linear mirror
+  if (PROBE3 && frame >= F_STATS && p7n < T3) {
+    gl.readPixels(0, 0, 1536, 768, gl.RGBA, gl.UNSIGNED_BYTE, frameByte);
+    for (let j = 0; j < probeTiles.length; j++) {
+      const t = probeTiles[j], x = t.tx*TILE, y = t.ty*TILE;
+      p7Series[j].boneT.push(rectMean(frameByte, x, y, 16, 16));
+      p7Series[j].skinT.push(rectMean(frameByte, 768 + x, y, 16, 16));
+      p7Series[j].boneP.push(rectMean(frameByte, x + 6, y + 6, 4, 4));
+      p7Series[j].skinP.push(rectMean(frameByte, 768 + x + 6, y + 6, 4, 4));
+      p7Series[j].lin.push(tileEma[t.ti]);
+    }
+    p7n++;
+    if (p7n === T3) finishProbe3();
   }
   // probe 2 — phase C: sequential GPU shutter segments, display-space patches
   if (PROBE2 && segK >= 0 && segMode !== 'done') {
@@ -711,6 +765,92 @@ function finishProbe2() {
   el.style.display = 'block';
   window.__PROBE_RESULT = probeOut;
   document.title = '010 probe2 ' + (verdict.PASS ? 'PASS' : 'FAIL');
+}
+
+// ---------- pass 4 verdicts (probe 3) ----------
+function rectMean(buf, x0, y0, w, h) {
+  let s = 0;
+  for (let y = y0; y < y0 + h; y++) {
+    let idx = (y*1536 + x0)*4;
+    for (let x = 0; x < w; x++, idx += 4) s += buf[idx];
+  }
+  return s/(w*h);
+}
+// ACF of OLS-detrended residuals, normalized at lag 0
+function acfDt(series, maxLag) {
+  const n = series.length;
+  const xs = series.map((_, i) => i);
+  const f = ols(xs, series);
+  const r = series.map((y, i) => y - (f.intercept + f.slope*i));
+  let v = 0; for (const x of r) v += x*x;
+  const out = [];
+  for (let k = 1; k <= maxLag; k++) {
+    let s = 0; for (let i = 0; i + k < n; i++) s += r[i]*r[i+k];
+    out.push(v > 0 ? s/v : 0);
+  }
+  return out;   // out[k-1] = rho(k)
+}
+function finishProbe3() {
+  const meanOf = a => { let s = 0; for (const x of a) s += x; return s/a.length; };
+  const disp = probeTiles.map((t, j) => ({ b: meanOf(p7Series[j].boneT), s: meanOf(p7Series[j].skinT) }));
+  const qual = [];
+  for (let j = 0; j < probeTiles.length; j++)
+    if (disp[j].b >= 40 && disp[j].b <= 200 && disp[j].s < 230) qual.push(j);
+  const all = probeTiles.map((t, j) => ({
+    lin:   acfDt(p7Series[j].lin,   MAXLAG3),
+    boneT: acfDt(p7Series[j].boneT, MAXLAG3),
+    skinT: acfDt(p7Series[j].skinT, MAXLAG3),
+    boneP: acfDt(p7Series[j].boneP, MAXLAG3),
+    skinP: acfDt(p7Series[j].skinP, MAXLAG3),
+  }));
+  const lagMed = (key, k) => median(qual.map(j => all[j][key][k-1]));
+  const lagMedAbs = (key, k) => median(qual.map(j => Math.abs(all[j][key][k-1])));
+  const th = k => Math.pow(1 - ALPHA, k);
+  const tauInt = key => median(qual.map(j => {
+    let s = 0; for (let k = 1; k <= MAXLAG3; k++) s += all[j][key][k-1];
+    return 1 + 2*s;
+  }));
+  // P7 — the bone remembers (linear mirror; white-input theory: rho(1)=0.700 exactly)
+  const r1lin = lagMed('lin', 1);
+  const ex5lin = lagMed('lin', 5) / th(5);
+  // P8 — the skin forgets (display bytes, tile aperture; hash is memoryless)
+  const skinLags = [1, 2, 3, 5, 8].map(k => ({ k, absMed: +lagMedAbs('skinT', k).toFixed(4) }));
+  const skinWhite = skinLags.every(o => o.absMed <= 0.10);
+  // P9 — display translation (Hermite attenuation through tonemap+bytes)
+  const r1dispB = lagMed('boneT', 1);
+  const lagsOut = [1, 2, 3, 5, 8, 13, 21, 34];
+  const profile = key => lagsOut.map(k => +lagMed(key, k).toFixed(4));
+  const verdict = {
+    P7_boneRemembers: { r1lin: +r1lin.toFixed(4), theoryWhite: +(1-ALPHA).toFixed(3),
+                        ex5lin: +ex5lin.toFixed(3),
+                        pass: r1lin >= 0.72 && ex5lin >= 1.3 },
+    P8_skinForgets: { lags: skinLags, pass: skinWhite },
+    P9_displayTranslation: { r1dispBone: +r1dispB.toFixed(4),
+                             attenuation: +(r1dispB/r1lin).toFixed(3),
+                             pass: r1dispB >= 0.5 },
+    readings: {
+      lags: lagsOut,
+      acfLin: profile('lin'), acfBoneTile: profile('boneT'), acfSkinTile: profile('skinT'),
+      acfBonePatch: profile('boneP'), acfSkinPatch: profile('skinP'),
+      excessVsWhite: { lin5: +ex5lin.toFixed(3),
+                       boneTile5: +(lagMed('boneT', 5)/th(5)).toFixed(3),
+                       bonePatch5: +(lagMed('boneP', 5)/th(5)).toFixed(3) },
+      tauInt: { theoryEmaWhite: +(1 + 2*(1-ALPHA)/ALPHA).toFixed(2),
+                lin: +tauInt('lin').toFixed(2), boneTile: +tauInt('boneT').toFixed(2),
+                bonePatch: +tauInt('boneP').toFixed(2), skinTile: +tauInt('skinT').toFixed(2) },
+      qualifiedTiles: qual.length,
+    },
+  };
+  verdict.PASS = verdict.P7_boneRemembers.pass && verdict.P8_skinForgets.pass &&
+                 verdict.P9_displayTranslation.pass;
+  probeOut.frames = { expose: F_EXPOSE, statsStart: F_STATS, T3, MAXLAG3 };
+  probeOut.K_EXP = K_EXP;
+  probeOut.verdict4 = verdict;
+  const el = document.getElementById('probe');
+  el.textContent = JSON.stringify(probeOut, null, 1);
+  el.style.display = 'block';
+  window.__PROBE_RESULT = probeOut;
+  document.title = '010 probe3 ' + (verdict.PASS ? 'PASS' : 'FAIL');
 }
 
 if (Q.has('alpha')) document.getElementById('tagL').innerHTML =
