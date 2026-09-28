@@ -1,0 +1,78 @@
+{
+ "piece": "010-earned-grain",
+ "seed": 7,
+ "params": {
+  "N": 200000,
+  "P_EMIT": 0.08,
+  "ALPHA": 0.3,
+  "GRAIN_A": 0.05,
+  "SIGMA": 110,
+  "GAMMA": 254,
+  "BETA": 0.00225,
+  "JIT": 0.45
+ },
+ "frames": {
+  "expose": 1100,
+  "statsStart": 1200,
+  "T4": 900
+ },
+ "K_EXP": 5.144515493146267,
+ "verdict5": {
+  "P10_eyeShutter": {
+   "Rbone": 0.8516,
+   "predBone": 0.851,
+   "Rskin": 0.4521,
+   "predSkin": 0.46,
+   "whiteFloor": 0.4082,
+   "amp": 1.884,
+   "predAmp": 1.852,
+   "pass": true
+  },
+  "P11_breathBand": {
+   "fracBoneLow3Hz": 0.669,
+   "fracSkinLow3Hz": 0.151,
+   "lorentzModel": 0.879,
+   "flatTheory": 0.1,
+   "pass": true
+  },
+  "P12_seeing": "outside the page \u2014 ?eye=1 screenshots, human judgment, verdict in header comment",
+  "readings": {
+   "qualifiedTiles": 15,
+   "retBoneAll": [
+    0.888,
+    0.838,
+    0.862,
+    0.87,
+    0.867,
+    0.837,
+    0.891,
+    0.846,
+    0.852,
+    0.861,
+    0.853,
+    0.812,
+    0.821,
+    0.799,
+    0.826
+   ],
+   "retSkinAll": [
+    0.523,
+    0.452,
+    0.427,
+    0.482,
+    0.556,
+    0.446,
+    0.452,
+    0.528,
+    0.518,
+    0.439,
+    0.497,
+    0.421,
+    0.429,
+    0.408,
+    0.475
+   ]
+  },
+  "PASS_machine": true
+ }
+}
