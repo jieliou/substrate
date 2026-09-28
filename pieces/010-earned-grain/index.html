@@ -193,6 +193,48 @@
   三台儀器對齊收官:空間(P3b 鎖形)、頻寬(P5 頻譜儀)、時間(ACF)。
   裁決規則第三讀法:問 grain 是長的還是貼的 = 量它的 ACF 有沒有昨天。
   qualified 15/24 tile;result JSON 入 piece 目錄。門檻未動。
+
+  ══ pass 5 預註冊(眼睛的快門 — 知覺拍;跑 ?probe=4 前寫定)══
+  問:三台儀器都是數字。這拍問眼睛 — 暗處喘亮處定的呼吸,眼睛留不留得住?
+  關鍵翻轉:整支作品都在講快門(EMA α、長曝、tonemap 肩),而**最後一道
+  快門長在觀者臉上** — 視覺系統的時間積分(Bloch's law)~100ms ≈ 60fps
+  下 6 幀 boxcar。眼睛不是被動的螢幕,是鏈上最後一台顯影器,而且它有偏心:
+  白顆粒過 6 幀積分掉 √6(−59%),有昨天的顆粒撐得住。
+  **看得見的,是有昨天的顆粒** — 這是裁決規則的知覺版。
+  理論(零自由參數 — 輸入全部來自 pass 4 已量的 display ACF):
+  n 幀 boxcar 後變異 = (σ²/n)·[1 + 2Σ_{k=1}^{n−1}(1−k/n)ρ(k)],n=6。
+  留存率 R = σ_int/σ_raw:
+    R_skin 預測 0.460(純白理論地板 0.408;高出的 0.05 = 皮相 ACF 正地板 —
+    長曝畫布還在收斂,世界的記憶從謊底下滲出);
+    R_bone 預測 0.851(pass 4 acfBoneTile,lag4 線性內插 0.488);
+    放大率 A = R_bone/R_skin 預測 1.852 — 眼睛把骨:皮的可見度差距乘 1.85。
+  量測:同窗重放(F_STATS 1200 起 900 幀逐幀,tile 孔徑 16×16,合格 tile
+  同 pass 3/4)。OLS 去趨勢殘差(同 pass 4 儀器署名)→ 6 幀 boxcar →
+  R = std(boxcar)/std(raw),取合格 tile median。
+  P10 眼睛的快門(留存率轉移,三門):
+     (a) median R_bone ∈ [0.80, 0.90];
+     (b) median R_skin ∈ [0.41, 0.51];
+     (c) A ∈ [1.65, 2.05]。
+  P11 呼吸住在哪個頻帶(periodogram,去趨勢殘差,排 DC):
+     骨相 <3 Hz 功率佔比 median ≥ 0.6(τ_int 15 → Lorentzian 角頻 0.64 Hz,
+     模型說 0.88,混合物不確定 → 寬門);皮相 ≤ 0.25(平坦理論 0.10 +
+     畫布地板)。知覺翻譯:骨相的呼吸是 crawl/boil(慢煮),皮相是 shimmer
+     (高頻閃)— 頻帶位置就是質感的名字。
+  P12 眼見為憑(唯一不由機器裁的門,質性,誠實記錄):?eye=1 掛 live 門 —
+     以 EMA(1/6) 近似 Bloch boxcar(具名近似:白噪聲留存 0.302 vs boxcar
+     0.408,只供 live 展示,儀器用真 boxcar)渲染「眼睛的殘像」。並排定格
+     (normal vs eye)後用眼睛判:骨相在眼視圖仍有結構性顆粒,皮相 overlay
+     可見地塌向平坦。
+  具名替代結局(事先寫下):
+     1. R_skin > 0.51 → 畫布收斂在本窗壓過 hash — 眼睛看到的是謊底下
+        畫布的呼吸,不是謊本身(報本輪皮相 ACF 地板)。
+     2. R_bone < 0.80 → lag4 內插或 lag>5 尾巴比公式吃重 → 報公式差,
+        儀器註記,命題不動(ACF 已在 pass 4 封帳)。
+     3. P11 骨相 < 0.6 → 混合物中頻比 Lorentzian 摘要重 → 報頻譜形狀,
+        命題由 P10 扛。
+     4. P12 敗而 P10/P11 過 → 呼吸真實存在但低於 1× 觀看尺度的對比閾 —
+        儀器聽得見、眼睛聽不見,這條縫本身就是讀數。
+  門檻寫定於此,跑後不動。
 -->
 <head>
 <meta charset="utf-8">
@@ -233,7 +275,9 @@ const LIFE_Q = 1/240, SPAWN_R = 350;
 const PROBE = Q.get('probe') === '1';
 const PROBE2 = Q.get('probe') === '2';            // pass 3: shutter sweep
 const PROBE3 = Q.get('probe') === '3';            // pass 4: temporal color (ACF)
-const PROBING = PROBE || PROBE2 || PROBE3;
+const PROBE4 = Q.get('probe') === '4';            // pass 5: the eye's shutter (Bloch boxcar)
+const EYE = Q.get('eye') === '1';                 // pass 5 live gate: the eye's residue
+const PROBING = PROBE || PROBE2 || PROBE3 || PROBE4;
 const STAT_LEN = parseInt(Q.get('frames') || '600', 10);
 const A_LADDER = [0.6, 0.45, 0.3, 0.2, 0.12, 0.08, 0.05, 0.03];
 const P5_START = 1200, P5_END = 2400;             // probe-2 phase B window
@@ -411,7 +455,11 @@ const patchByte = new Uint8Array(4*4*4);
 const T3 = 900, MAXLAG3 = 40;
 let p7Series = null;        // [j] = { boneT, skinT, boneP, skinP, lin } (T3-frame series)
 let p7n = 0;
-const frameByte = PROBE3 ? new Uint8Array(1536*768*4) : null;  // one sync per frame, extract in JS
+const frameByte = (PROBE3 || PROBE4) ? new Uint8Array(1536*768*4) : null;  // one sync per frame, extract in JS
+// probe-4 state (pass 5): tile display series only, same window as probe 3
+let p8Series = null;        // [j] = { boneT, skinT }
+let p8n = 0;
+let eyeCtx = null;          // ?eye=1 residue canvas
 
 function welford() { return { n:0, m:0, M2:0 }; }
 function wPush(w, x) { w.n++; const d = x - w.m; w.m += d/w.n; w.M2 += d*(x - w.m); }
@@ -448,6 +496,7 @@ function pickTiles() {
     p6Stats = A_LADDER.map(() => probeTiles.map(() => ({ bone: [], skin: [] })));
   }
   if (PROBE3) p7Series = probeTiles.map(() => ({ boneT: [], skinT: [], boneP: [], skinP: [], lin: [] }));
+  if (PROBE4) p8Series = probeTiles.map(() => ({ boneT: [], skinT: [] }));
 }
 // variance of residuals after removing OLS linear trend — kills leftover
 // convergence drift symmetrically on both sides (instrument, not thesis)
@@ -614,6 +663,19 @@ function tick() {
     p7n++;
     if (p7n === T3) finishProbe3();
   }
+  // probe 4 — pass 5: same window replay, tile aperture, display bytes only
+  if (PROBE4 && frame >= F_STATS && p8n < T3) {
+    gl.readPixels(0, 0, 1536, 768, gl.RGBA, gl.UNSIGNED_BYTE, frameByte);
+    for (let j = 0; j < probeTiles.length; j++) {
+      const t = probeTiles[j], x = t.tx*TILE, y = t.ty*TILE;
+      p8Series[j].boneT.push(rectMean(frameByte, x, y, 16, 16));
+      p8Series[j].skinT.push(rectMean(frameByte, 768 + x, y, 16, 16));
+    }
+    p8n++;
+    if (p8n === T3) finishProbe4();
+  }
+  // ?eye=1 — the eye's residue: Bloch ~100ms integration ≈ EMA(1/6) at 60fps
+  if (eyeCtx) { eyeCtx.globalAlpha = 1/6; eyeCtx.drawImage(canvas, 0, 0); }
   // probe 2 — phase C: sequential GPU shutter segments, display-space patches
   if (PROBE2 && segK >= 0 && segMode !== 'done') {
     segT++;
@@ -875,6 +937,82 @@ function finishProbe3() {
   el.style.display = 'block';
   window.__PROBE_RESULT = probeOut;
   document.title = '010 probe3 ' + (verdict.PASS ? 'PASS' : 'FAIL');
+}
+
+// ---------- pass 5 verdicts (probe 4): the eye's shutter ----------
+function detrendResid(series) {
+  const xs = series.map((_, i) => i);
+  const f = ols(xs, series);
+  return series.map((y, i) => y - (f.intercept + f.slope*i));
+}
+function stdOf(a) { let v = 0; for (const x of a) v += x*x; return Math.sqrt(v / Math.max(a.length - 2, 1)); }
+function boxcar6(r) {
+  const out = [];
+  for (let i = 0; i + 6 <= r.length; i++) {
+    let s = 0; for (let q = 0; q < 6; q++) s += r[i+q];
+    out.push(s/6);
+  }
+  return out;
+}
+function bandPower(r, k0, k1) {
+  const n = r.length; let p = 0;
+  for (let k = k0; k <= k1; k++) {
+    let re = 0, im = 0;
+    const w = 2*Math.PI*k/n;
+    for (let i = 0; i < n; i++) { re += r[i]*Math.cos(w*i); im -= r[i]*Math.sin(w*i); }
+    p += re*re + im*im;
+  }
+  return p;
+}
+function finishProbe4() {
+  const meanOf = a => { let s = 0; for (const x of a) s += x; return s/a.length; };
+  const qual = [];
+  for (let j = 0; j < probeTiles.length; j++) {
+    const b = meanOf(p8Series[j].boneT), s = meanOf(p8Series[j].skinT);
+    if (b >= 40 && b <= 200 && s < 230) qual.push(j);
+  }
+  const rB = qual.map(j => detrendResid(p8Series[j].boneT));
+  const rS = qual.map(j => detrendResid(p8Series[j].skinT));
+  const retn = r => stdOf(boxcar6(r)) / stdOf(r);
+  const Rb = median(rB.map(retn)), Rs = median(rS.map(retn));
+  const A = Rb / Rs;
+  // 900 frames @60fps: Δf = 1/15 Hz → 3 Hz = bin 45; total band bins 1..449 (DC excluded)
+  const frac = r => bandPower(r, 1, 45) / bandPower(r, 1, 449);
+  const fB = median(rB.map(frac)), fS = median(rS.map(frac));
+  const verdict = {
+    P10_eyeShutter: {
+      Rbone: +Rb.toFixed(4), predBone: 0.851,
+      Rskin: +Rs.toFixed(4), predSkin: 0.460, whiteFloor: 0.4082,
+      amp: +A.toFixed(3), predAmp: 1.852,
+      pass: Rb >= 0.80 && Rb <= 0.90 && Rs >= 0.41 && Rs <= 0.51 && A >= 1.65 && A <= 2.05 },
+    P11_breathBand: {
+      fracBoneLow3Hz: +fB.toFixed(3), fracSkinLow3Hz: +fS.toFixed(3),
+      lorentzModel: 0.879, flatTheory: 0.10,
+      pass: fB >= 0.6 && fS <= 0.25 },
+    P12_seeing: 'outside the page — ?eye=1 screenshots, human judgment, verdict in header comment',
+    readings: { qualifiedTiles: qual.length,
+      retBoneAll: rB.map(r => +retn(r).toFixed(3)),
+      retSkinAll: rS.map(r => +retn(r).toFixed(3)) },
+  };
+  verdict.PASS_machine = verdict.P10_eyeShutter.pass && verdict.P11_breathBand.pass;
+  probeOut.frames = { expose: F_EXPOSE, statsStart: F_STATS, T4: T3 };
+  probeOut.K_EXP = K_EXP;
+  probeOut.verdict5 = verdict;
+  const el = document.getElementById('probe');
+  el.textContent = JSON.stringify(probeOut, null, 1);
+  el.style.display = 'block';
+  window.__PROBE_RESULT = probeOut;
+  document.title = '010 probe4 ' + (verdict.PASS_machine ? 'PASS' : 'FAIL');
+}
+
+if (EYE) {
+  const ec = document.createElement('canvas');
+  ec.width = canvas.width; ec.height = canvas.height;
+  ec.style.cssText = 'position:absolute;left:0;top:0;width:100%;display:block';
+  document.getElementById('wrap').insertBefore(ec, document.getElementById('divider'));
+  eyeCtx = ec.getContext('2d');
+  document.getElementById('tagL').innerHTML = '骨相 — 眼睛的殘像 <em>Bloch ≈ EMA(1/6)</em>';
+  document.getElementById('tagR').innerHTML = '<em>Bloch ≈ EMA(1/6)</em> 眼睛的殘像 — 皮相';
 }
 
 if (Q.has('alpha')) document.getElementById('tagL').innerHTML =
