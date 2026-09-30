@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>011 — earned caustics — 光網的出身</title>
+<!--
+  011 — earned caustics · 光網的出身
+  first light 2026-09-30(午後,bot session)
+
+  parent:010 earned grain 封版種子「裁決看出身不看模樣」+
+  [[caustics-computation-routes-2026]] §三/§五.3(床位預設計)。
+  010 的直系續作:同一道裁決規則,光學版。
+
+  ══ 命題 ══
+  同一片池底、同一盞頂光。左右只差光網的出身:
+  左「折出來的」— 焦散由真實波場計算:η(x,t) = Σ₆ Aᵢ sin(kᵢ·x − ωᵢt + φᵢ)
+    (六個不可通約頻率),paraxial 折射位移 s = −c·h·∇η(c = 1 − 1/1.33),
+    亮度 = 1/|det(I − c·h·H(η))|,H = 解析 Hessian。fold 線(det→0)即
+    caustic 線 — 光線密度被表面曲率重新打包成銳利細絲,型態學(fold/cusp
+    網)物理正確。
+  右「貼上去的」— 工業標準假招:兩層程序 caustic-look 紋理(cellular 邊緣
+    發光)反向捲動相乘。看起來「像」焦散,對場全盲 — 它不消費 A、不消費
+    波場、不消費任何世界參數,只有兩個寫死的捲動速度。
+  live 模式:兩邊都在動、都很像。差別只有儀器測得出來 — 或者你動一下世界。
+
+  誠實界線(寫在最前):左相亮度是 Lagrangian 座標下的密度(1/|detJ| 畫在
+  源點 x 而非落點 P(x)),非逆映射;fold 集合與 caustic 集合相同,型態與
+  場響應真實,絕對照度分佈非嚴格。paraxial 近似(小斜率);c、h 寫死。
+  這是「算出來的」的誠實最小版 — 賣點不是輻射度學,是出身。
+
+  ══ 預註冊 v2(pass 1:場響應 — 跑 ?probe=1 前寫定,2026-09-30 14:0x)══
+  (v2 跑前修訂:v1 儀器為亮度尾比 p99/p50,但壓縮型 tonemap 1−exp(−I)
+   讓 p50 隨振幅同漲、尾比失敏 — v1 從未跑過,跑前換儀器,揭露留檔。)
+  儀器:振幅擾動的黑箱響應。對「世界」唯一參數 A_scale 做 ×1.5 階躍,
+  量兩相各自的**飽和面積比 sat = frac(luminance > 240/255)**(1/4 取樣格,
+  每 2 幀)— 摺線形成 = det J 過零 = 亮度撞頂 → sat 暴增;直接量「摺出現
+  了沒」,不受中間調壓縮影響。
+  底振幅調在次摺(sub-fold)域:名目 Σ 疊加 1.4,實現空間最大 ≈ 0.9 < 1(六個獨立正弦不同點對齊,實現值 ≈ 名目 0.65 倍;epoch 1 無摺或
+  弱摺),×1.5 後實現 ≈ 1.35 跨過 fold 閾(det J 過零成曲線)→ 真焦散的對比
+  應非線性暴漲;貼圖的直方圖與 A 無關。
+  時程:warmup 600f → epoch 1 收 300f → 幀 1000 A×1.5 → 沉降 100f →
+  epoch 2 收 300f。Δsat = median sat(epoch2) − median sat(epoch1)。
+  - G1(左有場):Δsat_L ≥ 0.010(≥1% 面板面積新增飽和 — 摺線真的長出來)
+  - G2(右全盲):|Δsat_R| ≤ 0.002(貼圖不消費 A,統計靜止)
+  - G3(決定論):同 seed 頁內重放 epoch 1,median sat_L 復現至 1e-9
+  預名替代結局:若 G1 敗於「base 已深摺」(epoch 1 sat_L 已 > 0.05,增量
+  無處長),FAIL 記為 regime 錯置課;若敗於「×1.5 仍未過摺閾」(sat_2 仍
+  ≈ 0),FAIL 記為實現值估計課(名目/實現換算再錯一次)。
+  底參數 A_BASE = 1.4 名目、gain 0.34 預跑後凍結(門檻寫定於此,跑後不動)。
+
+  ══ pass 1 判決(2026-09-30 14:1x,?probe=1,官方首跑)══
+  **FAIL — G1 敗,死因是第三種、預名清單外的結局:儀器量程錯誤。**
+  sat_L = sat_R = 0,全程、兩相、含 epoch 2。不是物理沒到,是門檻搆不到:
+  tonemap 後乘水色 tint (0.72, 0.86, 0.92) → 亮度上限 0.847 ≈ 216/255,
+  藍通道上限 239.7 — **threshold 240 住在顯示鏈的天花板之上**,任何物理
+  都不可能觸發它。G2「全盲」、G3「決定論」照字面全過(0 永遠等於 0,
+  0 永遠復現)— 兩個 PASS 的門在瞎掉的儀器上毫無意義,這本身是一課:
+  **門檻的可達性要先於門檻的判別力被驗證**(儀器要先證明自己看得見,
+  才有資格說看見了什麼)。與 010 pass 5 成對:那邊是「最後一道快門長在
+  觀者臉上」,這邊是「最後一級顯示鏈把儀器的眼睛蒙了」— 同一條鏈,
+  一次幫了裁決,一次坑了裁決。
+  昨夜 node-module 事故的同族教訓(敲錯門的測試):測「能不能」先於測
+  「是不是」。pass 2 預定:門檻遷入可達域(建議 G 通道 > 0.85·255,或
+  pre-tint 線性強度走 float FBO),重跑同一儀器;摺閾實現值問題(名目
+  1.4 → 實現 ~0.9)在量程修好前無法判定,列 pass 2 待驗。
+  A_BASE/gain 凍結不動(跑後不動,含 FAIL 後)。
+-->
+<style>
+  html,body { margin:0; background:#000; height:100%; overflow:hidden; }
+  canvas { display:block; width:100vw; height:100vh; }
+  .lab { position:fixed; bottom:10px; font:11px/1.4 "IBM Plex Mono",monospace;
+         letter-spacing:.08em; color:#8a929c; pointer-events:none; }
+  #labL { left:12px; } #labR { right:12px; }
+  .hud { position:fixed; top:10px; left:12px; font:11px/1.5 "IBM Plex Mono",monospace;
+         color:#bb4023; white-space:pre; pointer-events:none; }
+  #probe { display:none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="lab" id="labL">折出來的 — 波場的 Jacobian</div>
+<div class="lab" id="labR">貼上去的 — 兩層捲動紋理</div>
+<pre class="hud" id="probe"></pre>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const PROBE = Q.get('probe') === '1';
+
+// ── deterministic schedule (house style: no wall clock) ──
+const DT = 1/120;
+let frame = 0;
+
+// ── xorshift (seed 0x2C family) ──
+let rs = 0x2C011 >>> 0;
+function rnd() { rs ^= rs << 13; rs >>>= 0; rs ^= rs >> 17; rs ^= rs << 5; rs >>>= 0; return rs / 4294967296; }
+
+// ── wave field: 6 incommensurate components (generated once, deterministic) ──
+const NW = 6;
+const waveK = [], waveW = [], waveP = [], waveA = [];
+{
+  // wavenumbers: golden-angle directions, |k| in [6, 14]; ω = √(g|k|)-ish scale, incommensurate
+  const GA = 2.39996322972865332;
+  for (let i = 0; i < NW; i++) {
+    const th = i * GA + rnd() * 0.3;
+    const km = 9 + (22 - 9) * (i / (NW - 1)) + rnd() * 0.9;
+    waveK.push([Math.cos(th) * km, Math.sin(th) * km]);
+    waveW.push(Math.sqrt(9.8 * km) * 0.35 + rnd() * 0.05);
+    waveP.push(rnd() * 6.2831853);
+    waveA.push(1.0 / (km * km));   // spectrum ~ k^-2 → each component's max |H| contribution ~ A·k² = O(1), balanced
+  }
+}
+// A_BASE: pre-run calibration TARGET c·h·max|H| ≈ 0.7 sub-fold (門檻寫定於此,跑後不動)
+const C_REFR = 1 - 1/1.33;         // paraxial refraction constant ≈ 0.248
+const DEPTH  = 1.0;                // pool depth (arbitrary units; x-domain ~ [0,3])
+// Σ A·k² with A = 1/k² gives NW = 6 → normalize so c·h·A_scale·Σ ≈ 0.7
+const A_BASE = 1.4 / (C_REFR * DEPTH * NW);
+let aScale = 1.0;                  // the ONE world parameter; probe steps ×1.5 at frame 1000
+const A_OVERRIDE = parseFloat(Q.get('a') || '');
+if (!PROBE && Number.isFinite(A_OVERRIDE)) aScale = Math.max(0, Math.min(A_OVERRIDE, 4)); // live gate: ?a=1.5 — 動一下世界,看哪邊跟上
+
+// ── GL setup ──
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl2', { antialias:false, preserveDrawingBuffer: true });
+function fit() { cv.width = innerWidth; cv.height = innerHeight; gl.viewport(0,0,cv.width,cv.height); }
+fit(); addEventListener('resize', fit);
+
+const VS = `#version 300 es
+in vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+
+const FS = `#version 300 es
+precision highp float;
+out vec4 O;
+uniform vec2 res;
+uniform float t;         // scheduled time (frame*DT)
+uniform float aScale;    // world parameter (LEFT consumes; RIGHT is blind)
+uniform vec2 kk[6]; uniform float ww[6]; uniform float pp[6]; uniform float aa[6];
+uniform float cRef; uniform float depth; uniform float aBase;
+
+// ── right panel: procedural cellular caustic-LOOK (industry fake) ──
+vec2 hash2(vec2 q){
+  q = vec2(dot(q, vec2(127.1, 311.7)), dot(q, vec2(269.5, 183.3)));
+  return fract(sin(q) * 43758.5453);
+}
+float cellEdge(vec2 x){
+  vec2 n = floor(x), f = fract(x);
+  float d = 8.0;
+  for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++){
+    vec2 g = vec2(float(i), float(j));
+    vec2 o = hash2(n + g);
+    d = min(d, length(g + o - f));
+  }
+  return pow(smoothstep(0.0, 0.9, d), 2.2);   // bright ridges between cells
+}
+
+void main(){
+  vec2 uv = gl_FragCoord.xy / res;
+  bool left = uv.x < 0.5;
+  vec2 x = vec2(uv.x < 0.5 ? uv.x * 2.0 : (uv.x - 0.5) * 2.0, uv.y) * 3.0;
+
+  float I;
+  if (left) {
+    // η derivatives (analytic), paraxial landing Jacobian J = I − c·h·H
+    float hxx=0.0, hyy=0.0, hxy=0.0;
+    for (int i=0;i<6;i++){
+      float ph = dot(kk[i], x) - ww[i]*t + pp[i];
+      float s = sin(ph);
+      float A = aa[i] * aBase * aScale;
+      hxx += -A * kk[i].x * kk[i].x * s;
+      hyy += -A * kk[i].y * kk[i].y * s;
+      hxy += -A * kk[i].x * kk[i].y * s;
+    }
+    float ch = cRef * depth;
+    float a11 = 1.0 - ch*hxx, a22 = 1.0 - ch*hyy, a12 = -ch*hxy;
+    float detJ = a11*a22 - a12*a12;
+    I = min(1.0 / max(abs(detJ), 0.02), 14.0) * 0.34;
+  } else {
+    // two counter-scrolling layers, multiplied — consumes NO world parameter
+    float l1 = cellEdge(x * 3.6 + vec2( 0.13,  0.07) * t * 3.0);
+    float l2 = cellEdge(x * 4.4 + vec2(-0.11,  0.09) * t * 3.0);
+    I = l1 * l2 * 2.6 + 0.03;
+  }
+  // shared tonemap + water tint (identical for both panels)
+  float v = 1.0 - exp(-I);
+  vec3 col = vec3(v) * vec3(0.72, 0.86, 0.92) + vec3(0.0, 0.015, 0.02);
+  O = vec4(col, 1.0);
+}`;
+
+function sh(type, src){ const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+const pr = gl.createProgram();
+gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS));
+gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(pr);
+if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+gl.useProgram(pr);
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(pr, 'p');
+gl.enableVertexAttribArray(loc);
+gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+const U = n => gl.getUniformLocation(pr, n);
+gl.uniform2fv(U('kk[0]'), new Float32Array(waveK.flat()));
+gl.uniform1fv(U('ww[0]'), new Float32Array(waveW));
+gl.uniform1fv(U('pp[0]'), new Float32Array(waveP));
+gl.uniform1fv(U('aa[0]'), new Float32Array(waveA));
+gl.uniform1f(U('cRef'), C_REFR);
+gl.uniform1f(U('depth'), DEPTH);
+gl.uniform1f(U('aBase'), A_BASE);
+const uRes = U('res'), uT = U('t'), uA = U('aScale');
+
+// ── probe (pass 1: field response, pre-registered above) ──
+const hud = document.getElementById('probe');
+if (PROBE) hud.style.display = 'block';
+const P = {
+  phase: 'warmup', rL: [], rR: [], rL2: [], rR2: [], rReplay: [],
+  med: a => { const b = [...a].sort((x,y)=>x-y); return b[(b.length-1)>>1]; },
+};
+function satFrac(px, w, h, xoff, stride){
+  // fraction of saturated pixels (luminance > 240) on a 1/4 grid of one half-viewport
+  let n = 0, sat = 0;
+  for (let y = 0; y < h; y += 4) for (let x = xoff; x < xoff + w; x += 4) {
+    const i = (y * stride + x) * 4;
+    const L = px[i] * 0.2126 + px[i+1] * 0.7152 + px[i+2] * 0.0722;
+    n++; if (L > 240) sat++;
+  }
+  return sat / n;
+}
+let px = null;
+function collect(){
+  const w2 = cv.width >> 1, h = cv.height;
+  if (!px || px.length !== cv.width * h * 4) px = new Uint8Array(cv.width * h * 4);
+  gl.readPixels(0, 0, cv.width, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  return [satFrac(px, w2, h, 0, cv.width), satFrac(px, w2, h, w2, cv.width)];
+}
+
+function verdict(){
+  const m1L = P.med(P.rL), m1R = P.med(P.rR);
+  const m2L = P.med(P.rL2), m2R = P.med(P.rR2);
+  const dL = m2L - m1L, dR = m2R - m1R;
+  const mRep = P.med(P.rReplay);
+  const g1 = dL >= 0.010, g2 = Math.abs(dR) <= 0.002, g3 = Math.abs(mRep - m1L) <= 1e-9;
+  const res = { epoch1_sat: { L: m1L, R: m1R }, epoch2_sat: { L: m2L, R: m2R },
+                dSat_L: dL, dSat_R: dR, replay_med: mRep, replay_ref: m1L,
+                G1_field_response: g1, G2_texture_blind: g2, G3_determinism: g3,
+                PASS: g1 && g2 && g3 };
+  window.__PROBE_RESULT = res;
+  hud.textContent = 'pass 1 — field response (sat-area)\n' + JSON.stringify(res, null, 1);
+}
+
+// ── main loop (fixed-step schedule) ──
+function tick(){
+  const t = frame * DT;
+  gl.uniform2f(uRes, cv.width, cv.height);
+  gl.uniform1f(uT, t);
+  gl.uniform1f(uA, aScale);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  if (PROBE) {
+    if (!P.replayActive && frame >= 600 && frame < 900 && frame % 2 === 0) { const [a,b] = collect(); P.rL.push(a); P.rR.push(b); P.phase = 'epoch1'; }
+    if (frame === 1000) { aScale = 1.5; P.phase = 'step A x1.5'; }
+    if (frame >= 1100 && frame < 1400 && frame % 2 === 0) { const [a,b] = collect(); P.rL2.push(a); P.rR2.push(b); P.phase = 'epoch2'; }
+    if (frame === 1400) { // G3: in-page replay of epoch 1 (reset schedule + world, same seed constants)
+      aScale = 1.0; frame = 599; P.phase = 'replay'; P.replayActive = true;
+      requestAnimationFrame(tick); return;
+    }
+    if (P.replayActive && frame >= 600 && frame < 900 && frame % 2 === 0) { const [a] = collect(); P.rReplay.push(a); }
+    if (P.replayActive && frame === 900) { verdict(); P.phase = 'done'; }
+    if (P.phase !== 'done' && frame % 60 === 0) hud.textContent = `pass 1 probe — ${P.phase} f=${frame}`;
+  }
+  frame++;
+  if (!(PROBE && P.phase === 'done')) requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
