@@ -1,0 +1,9 @@
+{
+  "pass": 2, "probe": 1, "run": "2026-09-30T15:3x+08:00 (official, local server, headless chromium)",
+  "epoch1_sat": { "L": 0.0003092783505154639, "R": 0 },
+  "epoch2_sat": { "L": 0.034123711340206184, "R": 0 },
+  "dSat_L": 0.03381443298969072, "dSat_R": 0,
+  "replay_med": 0.0003092783505154639, "replay_ref": 0.0003092783505154639,
+  "maxG_observed": { "L": 221, "R": 207 }, "G0_threshold": 210, "G0_ceiling": 223,
+  "G1_field_response": true, "G2_texture_blind": true, "G3_determinism": true, "PASS": true
+}

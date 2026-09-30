@@ -64,6 +64,41 @@
   pre-tint 線性強度走 float FBO),重跑同一儀器;摺閾實現值問題(名目
   1.4 → 實現 ~0.9)在量程修好前無法判定,列 pass 2 待驗。
   A_BASE/gain 凍結不動(跑後不動,含 FAIL 後)。
+
+  ══ 預註冊(pass 2:同一儀器,修好眼睛 — 跑第二次 ?probe=1 前寫定,
+     2026-09-30 15:3x)══
+  pass 1 的課落實為結構:G0 可達性聲明先行。
+  量測通道改 G(raw byte):G 天花板 = 0.86 + 0.015 ≈ 0.875 → 223/255;
+  epoch 1 左相理論峰值 v≈0.91 → G≈203。threshold 定 **G > 210**,住在
+  (203, 223) 開區間內 — 儀器看得見、且 epoch 1 應接近 0。
+  sat = frac(G_raw > 210),其餘時程/座標/種子與 pass 1 全同。
+  - G0(可達性,量測前聲明):threshold 210 < 通道天花板 223 ✓;
+    verdict 同時回報兩相 epoch 2 實測 max G 供審計。
+  - G1(左有場):Δsat_L ≥ 0.010
+  - G2(右全盲):|Δsat_R| ≤ 0.002
+  - G3(決定論):頁內重放 epoch 1,median sat_L 復現至 1e-9
+  預名替代結局:(a) sat2_L 仍 ≈ 0 且 max G 卡在 203 附近 → 摺沒真的長出
+  來,「名目 1.4/實現 0.9」估計課,pass 3 修振幅域;(b) Δsat_L 介於
+  0.002-0.010 → 摺有長但面積係數課(fold 是曲線,面積由線寬決定);
+  (c) sat1_L 已 > 0.02 → epoch 1 非次摺,regime 錯置課。
+  A_BASE/gain/tonemap/tint 全凍結(pass 1 條款延續)。
+
+  ══ pass 2 判決(2026-09-30 15:3x,?probe=1 第二次官方跑)══
+  **PASS — 三門全綠,場響應第一讀法落地**(pass2-probe1-result.json):
+  G1:Δsat_L = 0.0338 — A×1.5 後左相 3.4% 面積躍過 G>210(epoch 1 僅
+  0.00031,109 倍躍升)— 摺線真的長出來了,門檻超 3.4 倍通過。
+  G2:sat_R 兩 epoch 恆 = 0(貼圖對世界參數全盲)。
+  G3:頁內重放 median 逐位復現(0.0003092783505154639)。
+  G0 審計的意外收穫 — **比門檻更乾淨的讀法**:左相實測 max G = 221
+  (摺形成時亮度頂到 tonemap 上限,動態範圍跟著世界長);右相 max G = 207,
+  一個常數 — 它的可達上限(l1·l2 極值 × 2.6 → v≈0.926 → G≈207)由寫死
+  的參數決定,永遠差門檻 3 byte。誠實註記:G2 因此帶結構性成分(右相
+  construction 上就搆不到 210)— 但這不是儀器的洞,是命題本身:貼上去
+  的紋理連「能多亮」都是常數,折出來的光網把上限讓給世界決定。裁決規則
+  光學版第一讀法:**動態範圍的出身 — 真焦散的亮度上限是場的函數,假焦散
+  的上限是常數**。
+  下一步候選:pass 3 時間軸(ACF 儀器移植 — 波動驅動 vs 週期捲動,010
+  pass 4 的直系)或摺閾實現值精算(alternative ending (a) 的正面版)。
 -->
 <style>
   html,body { margin:0; background:#000; height:100%; overflow:hidden; }
@@ -216,14 +251,18 @@ const P = {
   phase: 'warmup', rL: [], rR: [], rL2: [], rR2: [], rReplay: [],
   med: a => { const b = [...a].sort((x,y)=>x-y); return b[(b.length-1)>>1]; },
 };
+let maxG = { L: 0, R: 0 };
 function satFrac(px, w, h, xoff, stride){
-  // fraction of saturated pixels (luminance > 240) on a 1/4 grid of one half-viewport
-  let n = 0, sat = 0;
+  // pass 2 instrument: fraction of pixels with G_raw > 210 on a 1/4 grid of one half-viewport
+  let n = 0, sat = 0, mg = 0;
   for (let y = 0; y < h; y += 4) for (let x = xoff; x < xoff + w; x += 4) {
     const i = (y * stride + x) * 4;
-    const L = px[i] * 0.2126 + px[i+1] * 0.7152 + px[i+2] * 0.0722;
-    n++; if (L > 240) sat++;
+    // pass 2: G channel raw (ceiling 223 with tint) — threshold INSIDE reachable range
+    const g = px[i+1];
+    n++; if (g > 210) sat++;
+    if (g > mg) mg = g;
   }
+  if (xoff === 0) { if (mg > maxG.L) maxG.L = mg; } else { if (mg > maxG.R) maxG.R = mg; }
   return sat / n;
 }
 let px = null;
@@ -242,6 +281,7 @@ function verdict(){
   const g1 = dL >= 0.010, g2 = Math.abs(dR) <= 0.002, g3 = Math.abs(mRep - m1L) <= 1e-9;
   const res = { epoch1_sat: { L: m1L, R: m1R }, epoch2_sat: { L: m2L, R: m2R },
                 dSat_L: dL, dSat_R: dR, replay_med: mRep, replay_ref: m1L,
+                maxG_observed: { L: maxG.L, R: maxG.R }, G0_threshold: 210, G0_ceiling: 223,
                 G1_field_response: g1, G2_texture_blind: g2, G3_determinism: g3,
                 PASS: g1 && g2 && g3 };
   window.__PROBE_RESULT = res;
